@@ -1,0 +1,66 @@
+/* src/styles/antd-preflight.css */
+/* Import this at the end of your globals.css file */
+
+/* Reset all Ant Design CSS hash classes to prevent specificity issues */
+:where([class^="css-dev-only-do-not-override-"]) a,
+:where([class^="css-"]) a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/* Make sure button styles work as expected */
+:where([class^="css-dev-only-do-not-override-"]) .ant-btn:not(:disabled),
+:where([class^="css-"]) .ant-btn:not(:disabled) {
+  cursor: pointer;
+}
+
+/* Reset Ant Design's typography to match Tailwind's baseline */
+:where([class^="css-dev-only-do-not-override-"]) h1,
+:where([class^="css-dev-only-do-not-override-"]) h2,
+:where([class^="css-dev-only-do-not-override-"]) h3,
+:where([class^="css-dev-only-do-not-override-"]) h4,
+:where([class^="css-dev-only-do-not-override-"]) h5,
+:where([class^="css-dev-only-do-not-override-"]) h6,
+:where([class^="css-dev-only-do-not-override-"]) p,
+:where([class^="css-dev-only-do-not-override-"]) ol,
+:where([class^="css-dev-only-do-not-override-"]) ul {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-weight: inherit;
+}
+
+/* Ensure Ant Design's form elements inherit font styles */
+:where([class^="css-dev-only-do-not-override-"]) button,
+:where([class^="css-dev-only-do-not-override-"]) input,
+:where([class^="css-dev-only-do-not-override-"]) select,
+:where([class^="css-dev-only-do-not-override-"]) textarea {
+  font-family: inherit;
+}
+
+/* Override Ant Design's button styling */
+:where([class^="css-dev-only-do-not-override-"]).ant-btn-primary {
+  background-color: var(--color-brand-500);
+}
+
+:where([class^="css-dev-only-do-not-override-"]).ant-btn-primary:hover {
+  background-color: var(--color-brand-600) !important;
+}
+
+/* Fix dark mode styles */
+.dark :where([class^="css-dev-only-do-not-override-"]).ant-card,
+.dark :where([class^="css-dev-only-do-not-override-"]).ant-modal-content,
+.dark :where([class^="css-dev-only-do-not-override-"]).ant-dropdown-menu,
+.dark :where([class^="css-dev-only-do-not-override-"]).ant-select-dropdown {
+  background-color: var(--color-gray-dark, #1a2231);
+  color: var(--color-gray-50, #f9fafb);
+}
+
+.dark :where([class^="css-dev-only-do-not-override-"]).ant-table {
+  background-color: var(--color-gray-dark, #1a2231);
+}
+
+/* Use a more general selector for any Ant prefix that might change */
+[class*="ant-"] {
+  font-family: var(--font-outfit, 'Outfit, sans-serif');
+}
