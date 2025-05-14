@@ -1,27 +1,43 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { Table, Button, Input, Typography, Dropdown, message, Tooltip, Empty, Alert, Avatar, Card } from 'antd';
-import { 
-  SearchOutlined, 
-  MoreOutlined, 
-  EditOutlined, 
-  EyeOutlined, 
-  MailOutlined, 
-  LoginOutlined, 
+import { Table, Button, Input, Typography, Dropdown, message, Tooltip, Empty, Alert, Avatar, Card, Modal, Badge, Space } from 'antd';
+import {
+  SearchOutlined,
+  MoreOutlined,
+  EditOutlined,
+  EyeOutlined,
+  MailOutlined,
+  LoginOutlined,
   QrcodeOutlined,
-  DownloadOutlined,
-  PlusOutlined
+  PlusOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  ExclamationCircleOutlined,
+  FilterOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Tag, Email } from '@/services/tagsService';
 import useTags from '@/hooks/useTags';
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
+import { useTagsContext } from '@/context/tags/TagsContext';
+
+const { Title, Text } = Typography;
+const { confirm } = Modal;
 
 export default function TagsTable() {
   const [searchText, setSearchText] = useState<string>('');
+  const [sortedInfo, setSortedInfo] = useState<any>({});
+  const [filteredInfo, setFilteredInfo] = useState<any>({});
   const { tags, isLoading, error, fetchTags, deleteTag } = useTags();
-  const { Title } = Typography;
+  const router = useRouter();
+
+  // Use the tags context
+  const { setCurrentTag, addToCache } = useTagsContext();
 
   // Handle any error at component level
   useEffect(() => {
@@ -30,53 +46,72 @@ export default function TagsTable() {
     }
   }, [error]);
 
-  // Get primary email
-  const getPrimaryEmail = (emails: Email[]): string => {
-    if (!emails || emails.length === 0) return 'N/A';
-    return emails[0].value;
-  };
-
   // Generate initials from name
   const getInitials = (firstName: string, lastName: string): string => {
     return (
-      (firstName ? firstName.charAt(0) : '') + 
+      (firstName ? firstName.charAt(0) : '') +
       (lastName ? lastName.charAt(0) : '')
     ).toUpperCase();
   };
 
-  // Filter tags based on search text
+  // Handle table change (sorting, filtering)
+  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    setFilteredInfo(filters);
+    setSortedInfo(sorter);
+  };
+
+  // Reset filters and sorters
+  const clearAll = () => {
+    setFilteredInfo({});
+    setSortedInfo({});
+    setSearchText('');
+  };
+
+  // Filter tags based on search text and filters
   const filteredTags = tags.filter(tag => {
     const searchLower = searchText.toLowerCase();
     const fname = tag.tagInfo.fname?.toLowerCase() || '';
     const lname = tag.tagInfo.lname?.toLowerCase() || '';
     const emails = tag.tagInfo.emails?.map(e => e.value.toLowerCase()) || [];
     const company = tag.tagInfo.company?.toLowerCase() || '';
-    
-    return fname.includes(searchLower) || 
-           lname.includes(searchLower) || 
+
+    return fname.includes(searchLower) ||
+           lname.includes(searchLower) ||
            emails.some(email => email.includes(searchLower)) ||
            company.includes(searchLower);
   });
 
+  // Updated to store tag in context before navigation
   const handleView = (tag: Tag) => {
-    message.info(`Viewing details for ${tag.tagInfo.fname} ${tag.tagInfo.lname}`);
-    // Implement view logic or navigation
+    setCurrentTag(tag);  // Store the current tag in context
+    addToCache(tag);     // Add to the cache for future reference
+    router.push(`/tags/view/${tag.id}`);
   };
 
+  // Updated to store tag in context before navigation
   const handleEdit = (tag: Tag) => {
-    message.info(`Editing tag for ${tag.tagInfo.fname} ${tag.tagInfo.lname}`);
-    // Implement logic to navigate to the edit tag page or open an edit modal
-    window.location.href = `/tags/edit/${tag.id}`;
-    // Implement edit logic
+    setCurrentTag(tag);  // Store the current tag in context
+    addToCache(tag);     // Add to the cache for future reference
+    router.push(`/tags/edit/${tag.id}`);
   };
-  
-  const handleDelete = async (id: number) => {
-    const result = await deleteTag(id);
-    if (result.success) {
-      message.success('Contact deleted successfully');
-    } else {
-      message.error(result.error || 'Failed to delete contact');
-    }
+
+  const handleDelete = (tag: Tag) => {
+    confirm({
+      title: `Are you sure you want to delete ${tag.tagInfo.fname} ${tag.tagInfo.lname}?`,
+      icon: <ExclamationCircleOutlined />,
+      content: 'This action cannot be undone.',
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'No, Cancel',
+      async onOk() {
+        const result = await deleteTag(tag.id);
+        if (result.success) {
+          message.success(`${tag.tagInfo.fname} ${tag.tagInfo.lname} has been deleted successfully.`);
+        } else {
+          message.error(result.error || 'Failed to delete contact');
+        }
+      }
+    });
   };
 
   const handleDownloadOfflineQR = (tag: Tag) => {
@@ -89,7 +124,18 @@ export default function TagsTable() {
     // Implement QR code download logic
   };
 
-  // Define columns for the table
+  // Refresh data
+  const refreshData = () => {
+    fetchTags();
+    message.success('Contact list refreshed');
+  };
+
+  // Extract unique companies for filtering
+  const companyFilters = Array.from(new Set(tags.map(tag => tag.tagInfo.company)))
+    .filter(Boolean)
+    .map(company => ({ text: company, value: company }));
+
+  // Define columns for the table - separated profile pic and names, removed location under company
   const columns: ColumnsType<Tag> = [
     {
       title: '#',
@@ -101,33 +147,34 @@ export default function TagsTable() {
       ),
     },
     {
-        title: 'photo',
-        key: 'photo',
-        className: 'text-left',
-        render: (_, record) => (
-          <div className="flex items-center space-x-3">
-            <Avatar 
-              src={record.tagInfo.avatar} 
-              size={40}
-              className="bg-brand-500 flex-shrink-0"
-            >
-              {!record.tagInfo.avatar && getInitials(record.tagInfo.fname, record.tagInfo.lname)}
-            </Avatar>
-          </div>
-        ),
-      },
-    
+      title: 'Profile',
+      key: 'profile',
+      width: '80px',
+      className: 'text-center',
+      render: (_, record) => (
+        <Avatar
+          src={record.tagInfo.avatar}
+          size={50}
+          className="bg-blue-500 flex-shrink-0 mx-auto"
+        >
+          {!record.tagInfo.avatar && getInitials(record.tagInfo.fname, record.tagInfo.lname)}
+        </Avatar>
+      ),
+    },
     {
       title: 'Name',
       key: 'name',
       className: 'text-left',
       render: (_, record) => (
-        <div className="flex items-center space-x-3">
-          <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">
-              {record.tagInfo.fname} {record.tagInfo.lname}
-            </div>
+        <div>
+          <div className="font-medium text-gray-900">
+            {record.tagInfo.fname} {record.tagInfo.lname}
           </div>
+          {record.tagInfo.position && (
+            <div className="text-sm text-gray-500">
+              {record.tagInfo.position}
+            </div>
+          )}
         </div>
       ),
       sorter: (a, b) => {
@@ -135,72 +182,71 @@ export default function TagsTable() {
         const nameB = `${b.tagInfo.fname} ${b.tagInfo.lname}`;
         return nameA.localeCompare(nameB);
       },
-    },
-    {
-      title: 'Email',
-      key: 'email',
-      className: 'text-left',
-      render: (_, record) => {
-        const email = getPrimaryEmail(record.tagInfo.emails);
-        return (
-          <div className="flex items-center">
-            <MailOutlined className="mr-2 text-gray-500" />
-            <span className="text-gray-700 dark:text-gray-300">{email}</span>
-          </div>
-        );
-      },
-      sorter: (a, b) => {
-        const emailA = getPrimaryEmail(a.tagInfo.emails);
-        const emailB = getPrimaryEmail(b.tagInfo.emails);
-        return emailA.localeCompare(emailB);
-      },
+      sortOrder: sortedInfo.columnKey === 'name' && sortedInfo.order,
     },
     {
       title: 'Company',
       key: 'company',
       className: 'text-left',
+      width: '30%',
       render: (_, record) => (
-        <div className="text-gray-700 dark:text-gray-300">
+        <div className="text-gray-700 font-medium">
           {record.tagInfo.company || 'N/A'}
         </div>
       ),
       sorter: (a, b) => (a.tagInfo.company || '').localeCompare(b.tagInfo.company || ''),
+      sortOrder: sortedInfo.columnKey === 'company' && sortedInfo.order,
+      filters: companyFilters,
+      filteredValue: filteredInfo.company || null,
+      onFilter: (value, record) => record.tagInfo.company === value,
     },
     {
-      title: 'Options',
+      title: 'Actions',
       key: 'actions',
       className: 'text-center',
+      width: '20%',
       render: (_, record) => (
         <div className="flex justify-center space-x-2">
-          <Button 
+          <Button
             type="primary"
-            size="small"
-            icon={<EyeOutlined />} 
+            size="middle"
+            icon={<EyeOutlined />}
             onClick={() => handleView(record)}
             className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            View
-          </Button>
-          <Button 
+          />
+          <Button
             type="default"
-            size="small"
+            size="middle"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-          >
-            Edit
-          </Button>
+          />
           <Dropdown
             menu={{
               items: [
                 {
                   key: '1',
+                  label: 'View Details',
+                  icon: <EyeOutlined />,
+                  onClick: () => handleView(record),
+                },
+                {
+                  key: '2',
+                  label: 'Edit Contact',
+                  icon: <EditOutlined />,
+                  onClick: () => handleEdit(record),
+                },
+                {
+                  type: 'divider',
+                },
+                {
+                  key: '3',
                   label: 'Download Offline QR',
                   icon: <QrcodeOutlined />,
                   onClick: () => handleDownloadOfflineQR(record),
                 },
                 {
-                  key: '2',
+                  key: '4',
                   label: 'Download Online QR',
                   icon: <QrcodeOutlined />,
                   onClick: () => handleDownloadOnlineQR(record),
@@ -209,20 +255,21 @@ export default function TagsTable() {
                   type: 'divider',
                 },
                 {
-                  key: '3',
+                  key: '5',
                   label: 'Delete',
                   danger: true,
-                  onClick: () => handleDelete(record.id),
+                  icon: <DeleteOutlined />,
+                  onClick: () => handleDelete(record),
                 },
               ],
             }}
             trigger={['click']}
             placement="bottomRight"
           >
-            <Button 
+            <Button
               type="default"
-              size="small"
-              icon={<MoreOutlined />} 
+              size="middle"
+              icon={<MoreOutlined />}
               className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
             />
           </Dropdown>
@@ -236,8 +283,8 @@ export default function TagsTable() {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-brand-500 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading contacts data...</p>
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading contacts data...</p>
         </div>
       </div>
     );
@@ -267,36 +314,54 @@ export default function TagsTable() {
       </Card>
     );
   }
-  const handleAddNewTag = () => {
-    message.info('Adding new tag');
-    // Implement logic to open add tag form or modal
-  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <Title level={2} className="m-0 text-2xl font-bold">All Tags</Title>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-            
-          <Input
-            placeholder="Search contacts..."
-            prefix={<SearchOutlined className="text-gray-400" />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            allowClear
-            className="rounded-lg"
-          /> 
-          <Link 
-            href={"tags/new"}
-            className="bg-blue-500 hover:bg-blue-600 text-white">
-               <Button 
-            type="primary"
-            size="small"
-            icon={<PlusOutlined />}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            Create New Tag
-          </Button>
-          </Link>
+        <Title level={2} className="m-0 text-2xl font-bold">Contacts & Digital Cards</Title>
+
+        <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+          <div className="relative w-full md:w-auto">
+            <Input
+              placeholder="Search contacts..."
+              prefix={<SearchOutlined className="text-gray-400" />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+              className="rounded-lg w-full md:w-64"
+              size="large"
+            />
+          </div>
+
+          <div className="flex gap-2 w-full md:w-auto">
+            <Tooltip title="Refresh Data">
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={refreshData}
+                size="large"
+              />
+            </Tooltip>
+
+            <Tooltip title="Clear Filters">
+              <Button
+                icon={<FilterOutlined />}
+                onClick={clearAll}
+                size="large"
+                type={filteredInfo.company || sortedInfo.columnKey ? "primary" : "default"}
+              />
+            </Tooltip>
+
+            <Link href="/tags/new">
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined />}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                Create New
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -304,26 +369,101 @@ export default function TagsTable() {
         {tags.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="No contacts found"
+            description={
+              <div className="text-center">
+                <p className="text-lg font-medium mb-2">No contacts found</p>
+                <p className="text-gray-500 mb-4">Create your first contact to get started</p>
+                <Link href="/tags/new">
+                  <Button type="primary" icon={<PlusOutlined />}>
+                    Create New Contact
+                  </Button>
+                </Link>
+              </div>
+            }
             className="my-12"
           />
         ) : (
-          <Table
-            columns={columns}
-            dataSource={filteredTags}
-            rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-              className: "px-4 py-3"
-            }}
-            className="w-full"
-            bordered={false}
-            rowClassName="hover:bg-gray-50 dark:hover:bg-gray-800"
-          />
+          <>
+            <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <Text className="text-gray-600">
+                    Showing <Badge count={filteredTags.length} showZero style={{ backgroundColor: '#1890ff' }} /> of {tags.length} contacts
+                  </Text>
+                  {(Object.keys(filteredInfo).length > 0 || searchText) && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={clearAll}
+                      className="text-blue-500"
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Text className="text-gray-600 mr-2">Sort by:</Text>
+                  <Button
+                    size="small"
+                    icon={<SortAscendingOutlined />}
+                    type={sortedInfo.order === 'ascend' ? 'primary' : 'default'}
+                    onClick={() => setSortedInfo({ columnKey: 'contact', order: 'ascend' })}
+                  >
+                    Name
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<SortDescendingOutlined />}
+                    type={sortedInfo.order === 'descend' ? 'primary' : 'default'}
+                    onClick={() => setSortedInfo({ columnKey: 'contact', order: 'descend' })}
+                  >
+                    Name
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Table
+              columns={columns}
+              dataSource={filteredTags}
+              rowKey="id"
+              onChange={handleTableChange}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                className: "px-4 py-3"
+              }}
+              className="w-full contact-table"
+              bordered={false}
+              rowClassName="hover:bg-gray-50"
+              showSorterTooltip={false}
+            />
+          </>
         )}
       </Card>
+
+      {/* Custom styling for the table */}
+      <style jsx global>{`
+        .contact-table .ant-table-thead > tr > th {
+          background-color: #f9fafb;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .contact-table .ant-table-tbody > tr:hover > td {
+          background-color: #f3f4f6;
+        }
+
+        .contact-table .ant-table-tbody > tr > td {
+          padding: 16px;
+        }
+
+        .contact-table .ant-table-container {
+          border-radius: 8px;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
+
 import React, { useState, useEffect } from "react";
-import { 
+import {
   Form,
   Button,
   Card,
@@ -12,7 +13,8 @@ import {
   Steps,
   Divider,
   Checkbox,
-  Input
+  Input,
+  notification
 } from 'antd';
 import {
   PlusOutlined,
@@ -40,6 +42,8 @@ import { steps, cardLayouts, colorOptions } from './data/tagWizardData';
 import { useCardData } from '../../../../hooks/useCardData';
 import { TagWizardAPI } from '../../../../services/tagWizardAPI';
 import ImageUploader from './components/ImageUploader';
+import { useCreateTagWithFormData } from '@/hooks/tags/useTags';
+import { transformTagData } from '@/utils/tagDataTransformer';
 
 const { Title, Text } = Typography;
 
@@ -53,7 +57,10 @@ const TagWizard = () => {
   const [editLinkModalVisible, setEditLinkModalVisible] = useState(false);
   const [currentEditingLink, setCurrentEditingLink] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
-  
+
+  // Use the create tag mutation hook
+  const { mutate: createTag, isPending } = useCreateTagWithFormData();
+
   // Custom hook for managing card data
   const {
     formValues,
@@ -87,7 +94,7 @@ const TagWizard = () => {
         setIsPremium(false);
       }
     };
-    
+
     checkPremiumStatus();
   }, []);
 
@@ -109,35 +116,50 @@ const TagWizard = () => {
   const onFinish = async () => {
     try {
       setLoading(true);
-      
+
       // Validate all form fields
       await form.validateFields();
-      
-      // Create form data for API
-      const formData = await TagWizardAPI.prepareFormData(
-        formValues, 
+
+      // Transform UI data to API format
+      const apiData = transformTagData(formValues);
+
+      // Use the hook to create the tag with form data
+      createTag(
         {
-          avatarFile: avatarPreview, 
-          backgroundFile: backgroundPreview, 
-          logoFile: logoPreview
+          tagData: apiData,
+          avatarFile: avatarPreview
+        },
+        {
+          onSuccess: (data) => {
+            notification.success({
+              message: 'Digital Card Created',
+              description: 'Your digital card has been created successfully!',
+            });
+
+            // Navigate to the tags list page
+            router.push('/tags');
+          },
+          onError: (error) => {
+            console.error('Error creating tag:', error);
+
+            notification.error({
+              message: 'Creation Failed',
+              description: error?.response?.data?.message || 'Failed to create digital card. Please try again.',
+            });
+          },
+          onSettled: () => {
+            setLoading(false);
+          }
         }
       );
-      
-      // Submit to API
-      await TagWizardAPI.createDigitalCard(formData);
-      
-      alert('Digital card created successfully!');
-      router.push('/tags');
     } catch (error) {
-      console.error('Error creating tag:', error);
-      
-      if (error.isAxiosError) {
-        alert(error.response?.data?.message || 'Failed to create digital card');
-      } else {
-        alert('Please check form fields and try again');
-      }
-    } finally {
+      console.error('Form validation error:', error);
       setLoading(false);
+
+      notification.error({
+        message: 'Form Validation Failed',
+        description: 'Please check all required fields and try again.',
+      });
     }
   };
 
@@ -171,13 +193,13 @@ const TagWizard = () => {
     newFormValues.design.cardLayout = layoutValue;
     setFormValues(newFormValues);
     form.setFieldsValue({ cardLayout: layoutValue });
-    
+
     // When selecting standard layout and a background exists, remove it
     if (layoutValue === 'standard' && backgroundPreview) {
       removeImage('background');
     }
   };
-  
+
   const renderDesignSection = () => {
     const initialValues = {
       cardLayout: formValues.design.cardLayout,
@@ -188,9 +210,9 @@ const TagWizard = () => {
       cardText: formValues.design.cardText,
       linkText: formValues.design.linkText,
     };
-  
+
     console.log("Current card layout:", formValues.design.cardLayout);
-  
+
     return (
       <Form
         layout="vertical"
@@ -204,7 +226,7 @@ const TagWizard = () => {
               <Title level={5}>Card Layout</Title>
               <div className="flex gap-8 items-center mt-3">
                 {cardLayouts.map(layout => (
-                  <LayoutOption 
+                  <LayoutOption
                     key={layout.value}
                     layout={layout}
                     selected={formValues.design.cardLayout === layout.value}
@@ -214,14 +236,14 @@ const TagWizard = () => {
               </div>
             </Col>
           </Row>
-          
+
           <Form.Item name="cardLayout" hidden>
             <Input />
           </Form.Item>
         </div>
         <Divider />
         <Row gutter={[24, 24]}>
-          <ImageUploader 
+          <ImageUploader
             type="avatar"
             title="Profile picture"
             filePreview={avatarPreview}
@@ -230,11 +252,11 @@ const TagWizard = () => {
             required={true}
             layoutName={formValues.design.cardLayout} // Pass current layout name
           />
-          
+
           {/* For standard layout, don't show the cover photo option at all */}
           {formValues.design.cardLayout !== 'standard' && (
             <Col xs={24} md={14}>
-              <ImageUploader 
+              <ImageUploader
                 type="background"
                 title="Cover photo"
                 filePreview={backgroundPreview}
@@ -245,22 +267,22 @@ const TagWizard = () => {
             </Col>
           )}
         </Row>
-  
+
         <Divider />
         <Col xs={24} md={24}>
           {/* Card Background Color */}
-          <ColorPicker 
-            name="cardBackground" 
-            label="Card Background" 
+          <ColorPicker
+            name="cardBackground"
+            label="Card Background"
             currentColor={formValues.design.cardBackground}
             onChange={handleColorChange}
             isPremium={isPremium}
           />
-          
+
           {/* Header Background Color */}
-          <ColorPicker 
-            name="headerBackground" 
-            label="Header Background" 
+          <ColorPicker
+            name="headerBackground"
+            label="Header Background"
             currentColor={formValues.design.headerBackground}
             onChange={handleColorChange}
             isPremium={isPremium}
@@ -275,7 +297,7 @@ const TagWizard = () => {
     return (
       <div>
         <Title level={5} className="mb-4">Basic Info</Title>
-        <Form 
+        <Form
           layout="vertical"
           initialValues={{
             firstName: formValues.basicInfo.firstName,
@@ -296,7 +318,7 @@ const TagWizard = () => {
                 <Input placeholder="First Name" />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} md={12}>
               <Form.Item
                 name="lastName"
@@ -306,7 +328,7 @@ const TagWizard = () => {
                 <Input placeholder="Last Name" />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} md={12}>
               <Form.Item
                 name="company"
@@ -315,7 +337,7 @@ const TagWizard = () => {
                 <Input placeholder="Company Name" />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} md={12}>
               <Form.Item
                 name="position"
@@ -335,9 +357,9 @@ const TagWizard = () => {
                 Add links to your websites, social media, and contact information
               </Text>
             </div>
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
               onClick={() => setAddLinkModalVisible(true)}
               size="large"
             >
@@ -355,7 +377,7 @@ const TagWizard = () => {
           />
         </div>
 
-        <AddLinkModal 
+        <AddLinkModal
           visible={addLinkModalVisible}
           onCancel={() => setAddLinkModalVisible(false)}
           onAddLink={addLink}
@@ -403,7 +425,7 @@ const TagWizard = () => {
               <Switch />
             </Form.Item>
           </div>
-          
+
           <Text type="secondary">
             Allow visitors to send you messages directly through your digital card
           </Text>
@@ -412,7 +434,7 @@ const TagWizard = () => {
         <Form.Item noStyle shouldUpdate>
           {({ getFieldValue }) => {
             const enableLeadCapture = getFieldValue('enableLeadCapture');
-            
+
             return enableLeadCapture ? (
               <div className="bg-gray-50 p-6 rounded-lg shadow-inner">
                 <Form.Item
@@ -421,44 +443,44 @@ const TagWizard = () => {
                 >
                   <Input placeholder="Contact Me" />
                 </Form.Item>
-                
+
                 <div className="mb-4">
                   <Title level={5}>Form Fields</Title>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     <Form.Item name="fieldName" valuePropName="checked">
                       <Checkbox>Name</Checkbox>
                     </Form.Item>
-                    
+
                     <Form.Item name="fieldEmail" valuePropName="checked">
                       <Checkbox>Email</Checkbox>
                     </Form.Item>
-                    
+
                     <Form.Item name="fieldPhone" valuePropName="checked">
                       <Checkbox>Phone</Checkbox>
                     </Form.Item>
-                    
+
                     <Form.Item name="fieldCompany" valuePropName="checked">
                       <Checkbox>Company</Checkbox>
                     </Form.Item>
-                    
+
                     <Form.Item name="fieldMessage" valuePropName="checked">
                       <Checkbox>Message</Checkbox>
                     </Form.Item>
                   </div>
                 </div>
-                
+
                 <Form.Item
                   name="leadCaptureButton"
                   label="Submit Button Text"
                 >
                   <Input placeholder="Submit" />
                 </Form.Item>
-                
+
                 <Form.Item
                   name="thankYouMessage"
                   label="Thank You Message"
                 >
-                  <TextArea 
+                  <TextArea
                     placeholder="Thank you for your message. I will get back to you soon!"
                     rows={3}
                   />
@@ -467,10 +489,10 @@ const TagWizard = () => {
             ) : (
               <div className="text-center p-8 border border-dashed rounded-lg bg-gray-50">
                 <div className="mb-3">
-                  <img 
-                    src="/images/icons/form.svg" 
+                  <img
+                    src="/images/icons/form.svg"
                     alt="Form"
-                    className="w-6 h-6 mx-auto opacity-50" 
+                    className="w-6 h-6 mx-auto opacity-50"
                   />
                 </div>
                 <Text type="secondary">
@@ -527,31 +549,31 @@ const TagWizard = () => {
 
             <Divider />
             {renderStepContent()}
-            
+
             <Divider />
-            
+
             <div className="flex justify-between mt-6">
-              <Button 
+              <Button
                 onClick={prevStep}
                 icon={<LeftOutlined />}
                 disabled={currentStep === 0}
               >
                 Previous
               </Button>
-              
+
               <div className="flex gap-2">
                 {currentStep < 2 ? (
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     onClick={nextStep}
                   >
                     Next <ArrowRightOutlined />
                   </Button>
                 ) : (
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     onClick={onFinish}
-                    loading={loading}
+                    loading={loading || isPending}
                     icon={<SaveOutlined />}
                   >
                     Create Card
@@ -561,20 +583,20 @@ const TagWizard = () => {
             </div>
           </Card>
         </Col>
-        
+
         {/* Right Sidebar - Live Preview */}
         <Col xs={24} lg={8}>
           <div className="sticky top-6">
-            <Card 
-              title="Card Preview" 
-              className="shadow-md rounded-lg" 
-              style={{ 
+            <Card
+              title="Card Preview"
+              className="shadow-md rounded-lg"
+              style={{
                 backgroundColor: '#f0f5ff',
-                borderColor: '#d6e4ff' 
+                borderColor: '#d6e4ff'
               }}
             >
               <div className="flex justify-center">
-                <DigitalCardPreview 
+                <DigitalCardPreview
                   design={formValues.design}
                   basicInfo={formValues.basicInfo}
                   links={formValues.links}

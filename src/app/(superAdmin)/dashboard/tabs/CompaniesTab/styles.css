@@ -1,0 +1,15 @@
+.premium-message-success {
+  background: linear-gradient(to right, rgba(52, 211, 153, 0.1), rgba(16, 185, 129, 0.05));
+  border-left: 4px solid #10b981;
+  padding: 10px 12px;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.premium-message-error {
+  background: linear-gradient(to right, rgba(248, 113, 113, 0.1), rgba(239, 68, 68, 0.05));
+  border-left: 4px solid #ef4444;
+  padding: 10px 12px;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
