@@ -175,3 +175,52 @@ export default function useTags() {
     deleteTag
   };
 }
+
+
+export function useToggleContactStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation<any, AxiosError, { tagId: string | number, hasContact: boolean }>({
+    mutationFn: async ({ tagId, hasContact }) => {
+      const response = await apiClient.patch(`/tag/${tagId}/contact-status`, { hasContact });
+      return parseApiResponse(response);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TAG_ENDPOINT] });
+    },
+    onError: (error) => handleApiError(error),
+  });
+}
+
+export function useCreateFormConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation<any, AxiosError, { 
+    tagId: string, 
+    formConfig: {
+      formTitle?: string,
+      nameField?: string | null,
+      emailField?: string | null,
+      phoneField?: string | null,
+      companyField?: string | null,
+      messageField?: string | null,
+      submitButtonText?: string,
+      thankYouMessage?: string
+    }
+  }>({
+    mutationFn: async ({ tagId, formConfig }) => {
+      console.log('Creating form config with tagId:', tagId);
+      console.log('Form config data:', formConfig);
+      
+      const response = await apiClient.post('/form-config', {
+        tagId,
+        ...formConfig
+      });
+      return parseApiResponse(response);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/form-config'] });
+    },
+    onError: (error) => handleApiError(error),
+  });
+}

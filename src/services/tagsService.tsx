@@ -76,9 +76,7 @@ export interface Email {
               sessionStorage.getItem('jwt') ||
               sessionStorage.getItem('token') ||
               document.cookie.split('; ').find(row => row.startsWith('jwt='))?.split('=')[1];
-      
-      // If you're using an auth library that stores the token in a different location,
-      // add that logic here
+  
     }
     
     // You can also set a default token for development/testing
@@ -93,25 +91,19 @@ export interface Email {
     };
   };
   
-  // For debugging purposes
   const logAuthStatus = () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('jwt') || localStorage.getItem('token') || localStorage.getItem('authToken');
       console.log('Auth token exists:', !!token);
       if (token) {
-        // Log first few characters of token for debugging, never log full tokens
         console.log('Token starts with:', token.substring(0, 10) + '...');
       }
     }
   };
   
   export const tagsService = {
-    /**
-     * Fetch all tags from the API
-     */
     async getAllTags(): Promise<Tag[]> {
       try {
-        // Log auth status for debugging
         logAuthStatus();
         
         const response = await fetch(`${API_BASE_URL}/tag`, {
@@ -121,24 +113,71 @@ export interface Email {
         
         if (!response.ok) {
           if (response.status === 401) {
-            // Handle authentication error
             console.error('Authentication failed. Token may be invalid or expired.');
-            return []; // Return empty array instead of throwing to prevent app crashes
+            return []; 
           }
           console.error(`API error: ${response.status}`);
-          return []; // Return empty array
+          return []; 
         }
         
         return await response.json();
       } catch (error) {
         console.error('Error fetching tags:', error);
-        return []; // Return empty array instead of throwing
+        return []; 
+      }
+    },
+
+    async getAllMyTags(): Promise<Tag[]> {
+      try {
+        logAuthStatus();
+        
+        const response = await fetch(`${API_BASE_URL}/tag/my-tags`, {
+          headers: getAuthHeaders(),
+          cache: 'no-store',
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.error('Authentication failed. Token may be invalid or expired.');
+            return []; 
+          }
+          console.error(`API error: ${response.status}`);
+          return []; 
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        return []; 
+      }
+    },
+
+    async getCompanyContacts(companyId: number): Promise<Tag[]> {
+      try {
+        logAuthStatus();
+        
+        const response = await fetch(`${API_BASE_URL}/companies/${companyId}/contacts`, {
+          headers: getAuthHeaders(),
+          cache: 'no-store',
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.error('Authentication failed. Token may be invalid or expired.');
+            return []; 
+          }
+          console.error(`API error: ${response.status}`);
+          return []; 
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        return []; 
       }
     },
   
-    /**
-     * Get a single tag by ID
-     */
+
     async getTagById(id: number): Promise<Tag | null> {
       try {
         const response = await fetch(`${API_BASE_URL}/tags/${id}`, {
@@ -162,9 +201,7 @@ export interface Email {
       }
     },
   
-    /**
-     * Create a new tag
-     */
+
     async createTag(tagData: Partial<Tag>): Promise<Tag | null> {
       try {
         const response = await fetch(`${API_BASE_URL}/tags`, {
@@ -189,9 +226,6 @@ export interface Email {
       }
     },
   
-    /**
-     * Update an existing tag
-     */
     async updateTag(id: number, tagData: Partial<Tag>): Promise<Tag | null> {
       try {
         const response = await fetch(`${API_BASE_URL}/tags/${id}`, {
@@ -215,10 +249,7 @@ export interface Email {
         return null;
       }
     },
-  
-    /**
-     * Delete a tag
-     */
+
     async deleteTag(id: number): Promise<boolean> {
       try {
         const response = await fetch(`${API_BASE_URL}/tags/${id}`, {
@@ -242,9 +273,7 @@ export interface Email {
       }
     },
     
-    /**
-     * Search tags by name, email, or company
-     */
+
     async searchTags(query: string): Promise<Tag[]> {
       try {
         const response = await fetch(`${API_BASE_URL}/tags/search?q=${encodeURIComponent(query)}`, {
