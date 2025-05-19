@@ -17,7 +17,9 @@ import {
   FilterOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  PictureOutlined,
+  SignatureOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Tag, Email } from '@/services/tagsService';
@@ -70,14 +72,14 @@ export default function TagsTable() {
     const company = tag.tagInfo.company?.toLowerCase() || '';
 
     return fname.includes(searchLower) ||
-           lname.includes(searchLower) ||
-           emails.some(email => email.includes(searchLower)) ||
-           company.includes(searchLower);
+      lname.includes(searchLower) ||
+      emails.some(email => email.includes(searchLower)) ||
+      company.includes(searchLower);
   });
 
   const handleView = (tag: Tag) => {
-    setCurrentTag(tag); 
-    addToCache(tag);    
+    setCurrentTag(tag);
+    addToCache(tag);
     router.push(`https://link.bizcotap.com/profile/6829856056316e89705d98`);
   };
 
@@ -89,6 +91,25 @@ export default function TagsTable() {
   const companyFilters = Array.from(new Set(myTags.map(tag => tag.tagInfo.company)))
     .filter(Boolean)
     .map(company => ({ text: company, value: company }));
+
+  const handleCreateVirtualBackground = (record: Tag) => {
+    console.log('record ==>>>', record)
+    setCurrentTag(record);
+    addToCache(record);
+    router.push(`/companyAdmin/profiles/virtual-background/${record.id}`);
+  };
+
+  const handleGenerateQrCode = (record: Tag) => {
+    setCurrentTag(record);
+    addToCache(record);
+    message.info(`Generate QR code for ${record.tagInfo.fname}`);
+  };
+
+  const handleCreateEmailSignature = (record: Tag) => {
+    setCurrentTag(record);
+    addToCache(record);
+    message.info(`Create email signature for ${record.tagInfo.fname}`);
+  };
 
   const columns: ColumnsType<Tag> = [
     {
@@ -159,76 +180,53 @@ export default function TagsTable() {
       key: 'actions',
       className: 'text-center',
       width: '20%',
-      render: (_, record) => (
-        <div className="flex justify-center space-x-2">
-          <Button
-            type="primary"
-            size="middle"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          />
-          {/* <Button
-            type="default"
-            size="middle"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-          /> */}
-          {/* <Dropdown
-            menu={{
-              items: [
-                {
-                  key: '1',
-                  label: 'View Details',
-                  icon: <EyeOutlined />,
-                  onClick: () => handleView(record),
-                },
-                {
-                  key: '2',
-                  label: 'Edit Contact',
-                  icon: <EditOutlined />,
-                  onClick: () => handleEdit(record),
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: '3',
-                  label: 'Download Offline QR',
-                  icon: <QrcodeOutlined />,
-                  onClick: () => handleDownloadOfflineQR(record),
-                },
-                {
-                  key: '4',
-                  label: 'Download Online QR',
-                  icon: <QrcodeOutlined />,
-                  onClick: () => handleDownloadOnlineQR(record),
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: '5',
-                  label: 'Delete',
-                  danger: true,
-                  icon: <DeleteOutlined />,
-                  onClick: () => handleDelete(record),
-                },
-              ],
-            }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button
-              type="default"
-              size="middle"
-              icon={<MoreOutlined />}
-              className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-            />
-          </Dropdown> */}
-        </div>
-      ),
+      render: (_, record) => {
+        const menuItems = [
+          {
+            key: '1',
+            label: 'View Profile',
+            icon: <EyeOutlined />,
+            onClick: () => handleView(record),
+          },
+          {
+            type: 'divider' as const,
+          },
+          {
+            key: '2',
+            label: 'Create virtual background',
+            icon: <PictureOutlined />,
+            onClick: () => handleCreateVirtualBackground(record),
+          },
+          {
+            key: '3',
+            label: 'Generate QR Code',
+            icon: <QrcodeOutlined />,
+            onClick: () => handleGenerateQrCode(record),
+          },
+          {
+            key: '4',
+            label: 'Email Signature',
+            icon: <SignatureOutlined />,
+            onClick: () => handleCreateEmailSignature(record),
+          },
+        ];
+
+        return (
+          <Space size="middle">
+            <Tooltip title="View Profile">
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={() => handleView(record)}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              />
+            </Tooltip>
+            <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+              <Button icon={<MoreOutlined />} />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -256,7 +254,7 @@ export default function TagsTable() {
           showIcon
           action={
             <Button type="primary" icon={<LoginOutlined />} onClick={() => {
-              window.location.href = '/login'; 
+              window.location.href = '/login';
             }}>
               Log In
             </Button>

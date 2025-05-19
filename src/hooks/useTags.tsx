@@ -96,6 +96,30 @@ export const useTags = () => {
     });
   }, [tags]);
 
+  const fetchTagById = useCallback(async (id: string | number): Promise<Tag | null> => {
+    const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+    if (isNaN(numericId)) {
+      console.error('Invalid ID provided to fetchTagById');
+      setError('Invalid ID provided.'); 
+      return null;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const tag = await tagsService.getTagById(numericId);
+      if (!tag) {
+        setError('Contact not found.');
+      }
+      return tag;
+    } catch (err) {
+      console.error(`Error fetching tag with ID ${numericId}:`, err);
+      setError('Failed to load contact details.');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); 
+
   return {
     tags,
     myTags,
@@ -106,7 +130,8 @@ export const useTags = () => {
     fetchMyTags,
     deleteTag,
     fetchCompanyContacts,
-    searchTags
+    searchTags,
+    fetchTagById
   };
 };
 
