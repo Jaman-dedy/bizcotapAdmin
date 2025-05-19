@@ -10,12 +10,13 @@ import useAuth from "@/hooks/useAuth";
 import {
   ChevronDownIcon,
   GridIcon,
-  UserCircleIcon,
   ListIcon,
   PieChartIcon,
   PlugInIcon,
   TableIcon,
   CalenderIcon,
+  UserCircleIcon,
+  MailIcon
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
@@ -28,8 +29,11 @@ type NavItem = {
   icon: React.ReactNode;
 };
 const navItems: NavItem[] = [
-  { name: "Dashboard", path: "/dashboard", roles: ["super_admin", "company_admin", "individual"], icon: <GridIcon /> },
+  { name: "Dashboard", path: "/dashboard", roles: ["super_admin", "individual"], icon: <GridIcon /> },
+  { name: "Dashboard", path: "/companyAdmin/dashboard", roles: ["company_admin",], icon: <GridIcon /> },
   { name: "Tags & Cards", path: "/tags", roles: ["super_admin"], icon: <PlugInIcon /> },
+  { name: "Profiles", path: "/companyAdmin/profiles", roles: ["company_admin"], icon: <UserCircleIcon /> },
+  { name: "Contacts", path: "/companyAdmin/contacts", roles: ["company_admin"], icon: <MailIcon /> },
   { name: "Orders", path: "/orders", roles: ["super_admin"], icon: <ListIcon /> },
   { name: "Companies", path: "/companies", roles: ["super_admin"], icon: <TableIcon /> },
   { name: "Employees", path: "/employees", roles: ["company_admin"], icon: <ListIcon /> },

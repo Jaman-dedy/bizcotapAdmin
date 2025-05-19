@@ -44,6 +44,7 @@ import { TagWizardAPI } from '../../../../services/tagWizardAPI';
 import ImageUploader from './components/ImageUploader';
 import { useCreateTagWithFormData } from '@/hooks/tags/useTags';
 import { transformTagData } from '@/utils/tagDataTransformer';
+import { useCreateFormConfig } from '@/hooks/tags/useTags';
 
 const { Title, Text } = Typography;
 
@@ -60,6 +61,7 @@ const TagWizard = () => {
 
   // Use the create tag mutation hook
   const { mutate: createTag, isPending } = useCreateTagWithFormData();
+  const { mutate: createFormConfig } = useCreateFormConfig();
 
   // Custom hook for managing card data
   const {
@@ -117,13 +119,25 @@ const TagWizard = () => {
     try {
       setLoading(true);
 
-      // Validate all form fields
       await form.validateFields();
 
-      // Transform UI data to API format
-      const apiData = transformTagData(formValues);
+    const isLeadCaptureEnabled = form.getFieldValue('enableLeadCapture') || false;
 
-      // Use the hook to create the tag with form data
+    const apiData = transformTagData(formValues);
+    
+    apiData.hasContact = isLeadCaptureEnabled;
+
+    const formConfigData = {
+      formTitle: form.getFieldValue('leadCaptureTitle') || 'Contact Me',
+      nameField: form.getFieldValue('fieldName') ? 'value' : null,
+      emailField: form.getFieldValue('fieldEmail') ? 'value' : null,
+      phoneField: form.getFieldValue('fieldPhone') ? 'value' : null,
+      companyField: form.getFieldValue('fieldCompany') ? 'value' : null,
+      messageField: form.getFieldValue('fieldMessage') ? 'value' : null,
+      submitButtonText: form.getFieldValue('leadCaptureButton') || 'Submit',
+      thankYouMessage: form.getFieldValue('thankYouMessage') || 'Thank you for your message. I will get back to you soon!'
+    };
+
       createTag(
         {
           tagData: apiData,
@@ -131,13 +145,38 @@ const TagWizard = () => {
         },
         {
           onSuccess: (data) => {
-            notification.success({
-              message: 'Digital Card Created',
-              description: 'Your digital card has been created successfully!',
-            });
-
-            // Navigate to the tags list page
-            router.push('/tags');
+            if (isLeadCaptureEnabled) {
+              createFormConfig({
+                tagId: data?.tuid,
+                formConfig: formConfigData
+              }, {
+                onSuccess: () => {
+                  notification.success({
+                    message: 'Digital Card Created',
+                    description: 'Your digital card and lead capture form have been created successfully!',
+                  });
+                  
+                  router.push('/tags');
+                },
+                onError: (error) => {
+                  console.error('Error creating form config:', error);
+                  notification.warning({
+                    message: 'Form Config Creation Issue',
+                    description: 'Card created but there was an issue with the lead capture form configuration. You can set it up later.',
+                  });
+                  
+                  router.push('/tags');
+                }
+              });
+            } else {
+              notification.success({
+                message: 'Digital Card Created',
+                description: 'Your digital card has been created successfully!',
+              });
+              
+              // Navigate to the tags list page
+              router.push('/tags');
+            }
           },
           onError: (error) => {
             console.error('Error creating tag:', error);

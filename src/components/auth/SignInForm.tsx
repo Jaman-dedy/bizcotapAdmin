@@ -10,7 +10,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, ChangeEvent, useEffect } from "react";
 import { loginUser } from "@/services/authService";
 
-// Match the API response format
 interface AuthResponse {
   access_token: string;
   refresh_token: string;
@@ -35,22 +34,27 @@ export default function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const [returnUrl, setReturnUrl] = useState<string | null>(null);
 
-  // Check URL params for token expiration, return URL, or other errors
+  const getRedirectPathByRole = (role: string): string => {
+    switch (role) {
+      case 'SUPER_ADMIN':
+        return '/dashboard';
+      case 'COMPANY_ADMIN':
+        return '/companyAdmin/dashboard'; 
+      case 'INDIVIDUAL':
+        return '/dashboard';
+      default:
+        console.log('Unknown role detected:', role);
+        return '/dashboard';
+    }
+  };
+  
   useEffect(() => {
     const expired = searchParams.get('expired');
     const errorParam = searchParams.get('error');
-    const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('returnUrl');
     
-    // Store return URL if provided
-    if (callbackUrl) {
-      setReturnUrl(decodeURIComponent(callbackUrl));
-    }
-    
-    // Handle token expiration
     if (expired === 'true') {
       setError('Your session has expired. Please log in again to continue.');
       
-      // Clear any expired tokens
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
@@ -64,7 +68,6 @@ export default function SignInForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Form validation instead of using HTML5 required attribute
     if (!email) {
       setError('Email is required');
       return;
@@ -79,33 +82,30 @@ export default function SignInForm() {
     setError(null);
 
     try {
-      // Call the loginUser function with the credentials
       const data = await loginUser({ email, password });
+            
+      const userRole = data.user.role;
       
-      console.log('Login successful, data received:', data);
+      const rolePath = getRedirectPathByRole(userRole);
       
-      // Determine where to redirect the user after successful login
-      let redirectPath = '/dashboard';
+      const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('returnUrl');
+      const storedCallbackUrl = typeof window !== 'undefined' ? localStorage.getItem('callbackUrl') : null;
       
-      // First check for returnUrl from query parameter
-      if (returnUrl) {
-        redirectPath = returnUrl;
-      } 
-      // Then check for callback URL in localStorage as fallback
-      else if (typeof window !== 'undefined' && localStorage.getItem('callbackUrl')) {
-        redirectPath = localStorage.getItem('callbackUrl') || '/dashboard';
+      let redirectPath = rolePath;
+      
+      if (callbackUrl && callbackUrl !== '/dashboard') {
+        redirectPath = decodeURIComponent(callbackUrl);
+      } else if (storedCallbackUrl && storedCallbackUrl !== '/dashboard') {
+        redirectPath = storedCallbackUrl;
         localStorage.removeItem('callbackUrl');
       }
       
-      // Add a short delay to ensure localStorage is updated
-      // before navigation and auth checks occur
       setTimeout(() => {
         router.push(redirectPath);
       }, 300);
     } catch (err: any) {
       console.error('Login failed:', err);
       
-      // Handle different error responses
       if (err.response?.status === 401) {
         setError('Invalid email or password. Please try again.');
       } else if (err.response?.status === 403) {

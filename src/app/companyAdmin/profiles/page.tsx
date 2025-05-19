@@ -33,20 +33,17 @@ export default function TagsTable() {
   const [searchText, setSearchText] = useState<string>('');
   const [sortedInfo, setSortedInfo] = useState<any>({});
   const [filteredInfo, setFilteredInfo] = useState<any>({});
-  const { tags, isLoading, error, fetchTags, deleteTag } = useTags();
+  const { myTags, isLoading, error, fetchMyTags, deleteTag } = useTags();
   const router = useRouter();
 
-  // Use the tags context
   const { setCurrentTag, addToCache } = useTagsContext();
 
-  // Handle any error at component level
   useEffect(() => {
     if (error) {
       message.error(error);
     }
   }, [error]);
 
-  // Generate initials from name
   const getInitials = (firstName: string, lastName: string): string => {
     return (
       (firstName ? firstName.charAt(0) : '') +
@@ -54,21 +51,18 @@ export default function TagsTable() {
     ).toUpperCase();
   };
 
-  // Handle table change (sorting, filtering)
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     setFilteredInfo(filters);
     setSortedInfo(sorter);
   };
 
-  // Reset filters and sorters
   const clearAll = () => {
     setFilteredInfo({});
     setSortedInfo({});
     setSearchText('');
   };
 
-  // Filter tags based on search text and filters
-  const filteredTags = tags.filter(tag => {
+  const filteredTags = myTags.filter(tag => {
     const searchLower = searchText.toLowerCase();
     const fname = tag.tagInfo.fname?.toLowerCase() || '';
     const lname = tag.tagInfo.lname?.toLowerCase() || '';
@@ -81,61 +75,21 @@ export default function TagsTable() {
            company.includes(searchLower);
   });
 
-  // Updated to store tag in context before navigation
   const handleView = (tag: Tag) => {
-    setCurrentTag(tag);  // Store the current tag in context
-    addToCache(tag);     // Add to the cache for future reference
+    setCurrentTag(tag); 
+    addToCache(tag);    
     router.push(`https://link.bizcotap.com/profile/6829856056316e89705d98`);
   };
 
-  // Updated to store tag in context before navigation
-  const handleEdit = (tag: Tag) => {
-    setCurrentTag(tag);  // Store the current tag in context
-    addToCache(tag);     // Add to the cache for future reference
-    router.push(`/tags/edit/${tag.id}`);
-  };
-
-  const handleDelete = (tag: Tag) => {
-    confirm({
-      title: `Are you sure you want to delete ${tag.tagInfo.fname} ${tag.tagInfo.lname}?`,
-      icon: <ExclamationCircleOutlined />,
-      content: 'This action cannot be undone.',
-      okText: 'Yes, Delete',
-      okType: 'danger',
-      cancelText: 'No, Cancel',
-      async onOk() {
-        const result = await deleteTag(tag.id);
-        if (result.success) {
-          message.success(`${tag.tagInfo.fname} ${tag.tagInfo.lname} has been deleted successfully.`);
-        } else {
-          message.error(result.error || 'Failed to delete contact');
-        }
-      }
-    });
-  };
-
-  const handleDownloadOfflineQR = (tag: Tag) => {
-    message.success(`Downloading offline QR code for ${tag.tagInfo.fname} ${tag.tagInfo.lname}`);
-    // Implement QR code download logic
-  };
-
-  const handleDownloadOnlineQR = (tag: Tag) => {
-    message.success(`Downloading online QR code for ${tag.tagInfo.fname} ${tag.tagInfo.lname}`);
-    // Implement QR code download logic
-  };
-
-  // Refresh data
   const refreshData = () => {
-    fetchTags();
+    fetchMyTags();
     message.success('Contact list refreshed');
   };
 
-  // Extract unique companies for filtering
-  const companyFilters = Array.from(new Set(tags.map(tag => tag.tagInfo.company)))
+  const companyFilters = Array.from(new Set(myTags.map(tag => tag.tagInfo.company)))
     .filter(Boolean)
     .map(company => ({ text: company, value: company }));
 
-  // Define columns for the table - separated profile pic and names, removed location under company
   const columns: ColumnsType<Tag> = [
     {
       title: '#',
@@ -214,14 +168,14 @@ export default function TagsTable() {
             onClick={() => handleView(record)}
             className="bg-blue-500 hover:bg-blue-600 text-white"
           />
-          <Button
+          {/* <Button
             type="default"
             size="middle"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-          />
-          <Dropdown
+          /> */}
+          {/* <Dropdown
             menu={{
               items: [
                 {
@@ -272,7 +226,7 @@ export default function TagsTable() {
               icon={<MoreOutlined />}
               className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
             />
-          </Dropdown>
+          </Dropdown> */}
         </div>
       ),
     },
@@ -284,16 +238,14 @@ export default function TagsTable() {
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading contacts data...</p>
+          <p className="mt-4 text-gray-600">Loading Profiles data...</p>
         </div>
       </div>
     );
   }
 
-  // Check if there's an auth error by examining the error message
   const isAuthError = error && error.includes('Authentication');
 
-  // Show authentication alert if error is auth-related
   if (isAuthError) {
     return (
       <Card className="shadow-md rounded-lg overflow-hidden">
@@ -304,8 +256,7 @@ export default function TagsTable() {
           showIcon
           action={
             <Button type="primary" icon={<LoginOutlined />} onClick={() => {
-              // Redirect to login page or open login modal
-              window.location.href = '/login'; // Adjust to your login path
+              window.location.href = '/login'; 
             }}>
               Log In
             </Button>
@@ -318,12 +269,12 @@ export default function TagsTable() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <Title level={2} className="m-0 text-2xl font-bold">Contacts & Digital Cards</Title>
+        <Title level={2} className="m-0 text-2xl font-bold">Profiles</Title>
 
         <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
           <div className="relative w-full md:w-auto">
             <Input
-              placeholder="Search contacts..."
+              placeholder="Search Profiles..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -351,7 +302,7 @@ export default function TagsTable() {
               />
             </Tooltip>
 
-            <Link href="/tags/new">
+            {/* <Link href="/tags/new">
               <Button
                 type="primary"
                 size="large"
@@ -360,18 +311,18 @@ export default function TagsTable() {
               >
                 Create New
               </Button>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>
 
       <Card className="shadow-md rounded-lg overflow-hidden">
-        {tags.length === 0 ? (
+        {myTags.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <div className="text-center">
-                <p className="text-lg font-medium mb-2">No contacts found</p>
+                <p className="text-lg font-medium mb-2">No Profiles found</p>
                 <p className="text-gray-500 mb-4">Create your first contact to get started</p>
                 <Link href="/tags/new">
                   <Button type="primary" icon={<PlusOutlined />}>
@@ -388,7 +339,7 @@ export default function TagsTable() {
               <div className="flex justify-between items-center">
                 <div>
                   <Text className="text-gray-600">
-                    Showing <Badge count={filteredTags.length} showZero style={{ backgroundColor: '#1890ff' }} /> of {tags.length} contacts
+                    Showing <Badge count={filteredTags.length} showZero style={{ backgroundColor: '#1890ff' }} /> of {myTags.length} Profiles
                   </Text>
                   {(Object.keys(filteredInfo).length > 0 || searchText) && (
                     <Button
@@ -443,7 +394,6 @@ export default function TagsTable() {
         )}
       </Card>
 
-      {/* Custom styling for the table */}
       <style jsx global>{`
         .contact-table .ant-table-thead > tr > th {
           background-color: #f9fafb;
