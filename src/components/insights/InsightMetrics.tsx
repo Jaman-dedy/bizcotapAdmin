@@ -26,7 +26,7 @@ export const InsightMetrics: React.FC<InsightMetricsProps> = ({
   return (
     <Row gutter={[16, 16]}>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false} className="h-full shadow-sm">
+        <Card variant="outlined" className="h-full shadow-sm">
           <Statistic
             title="Total Views"
             value={totalViews}
@@ -43,7 +43,7 @@ export const InsightMetrics: React.FC<InsightMetricsProps> = ({
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false} className="h-full shadow-sm">
+        <Card variant="outlined" className="h-full shadow-sm">
           <Statistic
             title="Total Actions"
             value={totalActions}
@@ -53,7 +53,7 @@ export const InsightMetrics: React.FC<InsightMetricsProps> = ({
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false} className="h-full shadow-sm">
+        <Card variant="outlined" className="h-full shadow-sm">
           <Statistic
             title="Conversion Rate"
             value={conversionRate}
@@ -65,7 +65,7 @@ export const InsightMetrics: React.FC<InsightMetricsProps> = ({
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false} className="h-full shadow-sm">
+        <Card variant="outlined" className="h-full shadow-sm">
           <Statistic
             title="Digital Cards"
             value={totalTags}

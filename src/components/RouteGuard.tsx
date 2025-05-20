@@ -23,7 +23,7 @@ const PROTECTED_ROUTES = [
 ];
 
 // Auth-related routes that should not trigger redirects when authenticated
-const AUTH_ROUTES = ['/login', '/register', '/reset-password', '/forgot-password'];
+const AUTH_ROUTES = ['/', '/register', '/reset-password', '/forgot-password'];
 
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -62,16 +62,16 @@ export default function RouteGuard({ children }: RouteGuardProps) {
         
         // When token expires, add an expired flag to the URL
         const queryParam = isTokenExpired ? `expired=true&returnUrl=${returnUrl}` : `returnUrl=${returnUrl}`;
-        router.push(`/login?${queryParam}`);
+        router.push(`/?${queryParam}`);
         return;
       }
 
       // Case 2: User is authenticated and tries to access auth routes
-      if (user && !isTokenExpired && isAuthRoute(currentPath)) {
-        console.log('Authenticated user trying to access auth route, redirecting to dashboard');
-        router.push('/dashboard');
-        return;
-      }
+      // if (user && !isTokenExpired && isAuthRoute(currentPath)) {
+      //   console.log('Authenticated user trying to access auth route, redirecting to dashboard');
+      //   router.push('/companyAdmin/dashboard');
+      //   return;
+      // }
     };
 
     handleRouteGuard();

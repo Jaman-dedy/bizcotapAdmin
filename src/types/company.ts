@@ -59,6 +59,7 @@ export interface CompanyQueryParams {
 }
 
 export interface PaginatedResponse<T> {
+  map: any;
   data: T[];
   total: number;
   page: number;

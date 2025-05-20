@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import tagsService, { Tag } from '@/services/tagsService';
 
-export const useTags = () => {
+export const useTags = (id?: string) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [myTags, setMyTags] = useState<Tag[]>([]);
   const [companyContacts, setCompanyContacts] = useState<Tag[]>([]);
+  const [singleTag, setSingleTag] = useState<Tag | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,9 +57,31 @@ export const useTags = () => {
     }
   }, []);
 
+  const fetchSingleTagByTuid = useCallback(async (id: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await tagsService.getSingleTagByTuid(id);
+      setSingleTag(data);
+      return { success: true };
+    } catch (err) {
+      console.error('Error fetching single tag:', err);
+      setError('Failed to load single tag. Please try again later.');
+      return { success: false, error: 'Failed to load single tag. Please try again later.' };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchTags();
   }, [fetchTags]);
+
+  useEffect(() => {
+    if (id) {
+      fetchSingleTagByTuid(id);
+    }
+  }, [fetchSingleTagByTuid, id]);
 
   useEffect(() => {
     fetchMyTags();
@@ -123,10 +146,12 @@ export const useTags = () => {
   return {
     tags,
     myTags,
+    singleTag,
     companyContacts,
     isLoading,
     error,
     fetchTags,
+    fetchSingleTagByTuid,
     fetchMyTags,
     deleteTag,
     fetchCompanyContacts,

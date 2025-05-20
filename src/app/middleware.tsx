@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // List of paths that don't require authentication
 const publicPaths = [
-  '/login',
+  '/',
   '/register',
   '/forgot-password',
   '/reset-password',
@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
   if (!token) {
     // Create the return URL
     const returnUrl = encodeURIComponent(request.nextUrl.pathname);
-    const loginUrl = new URL(`/login?returnUrl=${returnUrl}`, request.url);
+    const loginUrl = new URL(`/?returnUrl=${returnUrl}`, request.url);
     
     return NextResponse.redirect(loginUrl);
   }

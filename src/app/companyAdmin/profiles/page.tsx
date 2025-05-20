@@ -90,13 +90,13 @@ export default function TagsTable() {
 
   const companyFilters = Array.from(new Set(myTags.map(tag => tag.tagInfo.company)))
     .filter(Boolean)
-    .map(company => ({ text: company, value: company }));
+    .map(company => ({ text: company, value: company })) as { text: string; value: string }[];
 
   const handleCreateVirtualBackground = (record: Tag) => {
     console.log('record ==>>>', record)
     setCurrentTag(record);
     addToCache(record);
-    router.push(`/companyAdmin/profiles/virtual-background/${record.id}`);
+    router.push(`/companyAdmin/profiles/virtual-background/${record.tuid}`);
   };
 
   const handleGenerateQrCode = (record: Tag) => {
@@ -254,7 +254,7 @@ export default function TagsTable() {
           showIcon
           action={
             <Button type="primary" icon={<LoginOutlined />} onClick={() => {
-              window.location.href = '/login';
+              window.location.href = '/';
             }}>
               Log In
             </Button>

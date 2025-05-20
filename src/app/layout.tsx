@@ -8,11 +8,15 @@ import { TagsProvider } from '@/context/tags/TagsContext';
 import AntdRegistry from '@/components/AntdRegistry';
 import AntdProvider from '@/components/AntdProvider';
 import RouteGuard from '@/components/RouteGuard';
-import { QueryProvider } from '@/providers/QueryProvider';
+import { QueryProvider } from '@/services/providers/QueryProvider';
 import { Toaster } from 'react-hot-toast';
+import Script from 'next/script';
+
 const outfit = Outfit({
   subsets: ["latin"],
+  display: 'swap',
 });
+
 export const metadata: Metadata = {
   title: {
     template: '%s | Bizcotap Dashboard',
@@ -24,28 +28,57 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-// Suppress hydration warnings caused by browser extensions
-if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+
+if (typeof window !== 'undefined') {
   const originalConsoleError = console.error;
   console.error = (...args) => {
+    const errorMsg = args[0]?.toString() || '';
     if (
-      args[0]?.includes('Hydration failed because the initial UI does not match') ||
-      args[0]?.includes('There was an error while hydrating') ||
-      args[0]?.includes('Text content does not match server-rendered HTML')
+      errorMsg.includes('Hydration failed because the initial UI does not match') ||
+      errorMsg.includes('There was an error while hydrating') ||
+      errorMsg.includes('Text content does not match server-rendered HTML') ||
+      errorMsg.includes('Warning: Expected server HTML to contain a matching') ||
+      errorMsg.includes('data-js-focus-visible') ||
+      errorMsg.includes('js-focus-visible') ||
+      errorMsg.includes('focus-visible')
     ) {
       return;
     }
     originalConsoleError(...args);
   };
 }
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${outfit.className} dark:bg-gray-900`}>
+    <html lang="en" >
+        <head>
+    <Script id="focus-visible-fix" strategy="beforeInteractive">{`
+      (function() {
+        if (typeof window !== 'undefined') {
+          const ready = (callback) => {
+            if (document.readyState !== 'loading') {
+              callback();
+            } else {
+              document.addEventListener('DOMContentLoaded', callback);
+            }
+          };
+          
+          ready(() => {
+            document.documentElement.classList.remove('js-focus-visible');
+            const elementsWithAttr = document.querySelectorAll('[data-js-focus-visible]');
+            elementsWithAttr.forEach(el => {
+              el.removeAttribute('data-js-focus-visible');
+            });
+          });
+        }
+      })();
+    `}</Script>
+  </head>
+      <body className={`${outfit.className} dark:bg-gray-900`} suppressHydrationWarning>
         <QueryProvider>
           <ThemeProvider>
             <AuthProvider>

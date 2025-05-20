@@ -1,8 +1,18 @@
-'use client';
+'use client'  
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Typography, Card, Checkbox, Radio, Upload, Image, message, Spin, Alert, Tabs } from 'antd';
+import Button from 'antd/es/button';
+import Typography from 'antd/es/typography';
+import Card from 'antd/es/card';
+import Checkbox from 'antd/es/checkbox';
+import Radio from 'antd/es/radio';
+import Upload from 'antd/es/upload';
+import Image from 'antd/es/image';
+import message from 'antd/es/message';
+import Spin from 'antd/es/spin';
+import Alert from 'antd/es/alert';
+import Tabs from 'antd/es/tabs';
 import { ArrowLeftOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTagsContext } from '@/context/tags/TagsContext';
 import HookUseTags from '@/hooks/useTags';
@@ -10,44 +20,6 @@ import { Tag } from '@/services/tagsService';
 
 const { Title, Text } = Typography;
 
-// Dummy Tag Data for Demo
-const DUMMY_TAG_ID = 999;
-const dummyTagData: Tag = {
-  id: DUMMY_TAG_ID,
-  tuid: `dummy-tuid-${DUMMY_TAG_ID}`,
-  tagInfo: {
-    fname: "Demo",
-    lname: "User",
-    position: "Software Engineer",
-    company: "BizcoTech Inc.",
-    avatar: null,
-    emails: [{ type: "work", value: "demo.user@bizcotech.com" }],
-    phones: [{ type: "work", value: "+1234567890" }],
-    websites: [{ type: "company", value: "https://bizcotech.com" }],
-    addresses: [],
-    dob: null,
-    notes: "This is dummy data for demo purposes.",
-    title: "Mr."
-  },
-  isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  privacyPolicyAccepted: true,
-  privacyPolicyVersion: "1.0",
-  privacyAcceptedDate: new Date().toISOString(),
-  userId: 100,
-  companyId: 200,
-  tagOrderId: null,
-  user: {
-    id: 100,
-    email: "dummy.user@example.com",
-    firstName: "Demo",
-    lastName: "User"
-  },
-  company: null,
-};
-
-// Background library - static data
 const backgroundLibrary = [
   { id: '1', src: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmVhY2glMjBvZmZpY2V8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60', name: 'Beach Office' },
   { id: '2', src: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8b2ZmaWNlJTIwYmFja2dyb3VuZHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60', name: 'Modern Office' },
@@ -57,213 +29,266 @@ const backgroundLibrary = [
   { id: '6', src: 'https://images.unsplash.com/photo-1553095066-5014bc7b7f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YWJzdHJhY3QlMjBiYWNrZ3JvdW5kfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60', name: 'Gradient Blur' },
 ];
 
+type TextItem = string | { text: string; isName: boolean };
+
+
 const VirtualBackgroundPage = () => {
   const router = useRouter();
   const params = useParams();
-  const tagId = params.tagId as string;
+  const tagId = typeof params?.tagId === 'string' ? params.tagId : Array.isArray(params?.tagId) ? params.tagId[0] : '';
 
   const { getFromCache, addToCache: addTagToCache } = useTagsContext();
-  const tagsHookData = HookUseTags();
-  const { fetchTagById, isLoading: isLoadingTagFromApi, error: apiError } = tagsHookData;
+  
+  const { singleTag, isLoading: isLoadingTagFromApi, error: apiError } = HookUseTags(tagId);
 
   const [tag, setTag] = useState<Tag | null>(null);
-  const [selectedBgImage, setSelectedBgImage] = useState<string>('');
-  const [qrColor, setQrColor] = useState<string>('#000000');
+  const [selectedBgImage, setSelectedBgImage] = useState('');
+  const [qrColor, setQrColor] = useState('#000000');
 
-  const [showQrCode, setShowQrCode] = useState<boolean>(true);
-  const [condensedView, setCondensedView] = useState<boolean>(false);
+  const [showQrCode, setShowQrCode] = useState(true);
+  const [condensedView, setCondensedView] = useState(false);
 
-  const [showName, setShowName] = useState<boolean>(true);
-  const [showJobTitle, setShowJobTitle] = useState<boolean>(false);
-  const [showCompany, setShowCompany] = useState<boolean>(false);
+  const [showName, setShowName] = useState(true);
+  const [showJobTitle, setShowJobTitle] = useState(false);
+  const [showCompany, setShowCompany] = useState(false);
+  const [showEmail, setShowEmail] = useState(true);
+  const [showPhone, setShowPhone] = useState(true);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load tag data from cache or API
   useEffect(() => {
-    if (tagId) {
-      setIsLoading(true);
-      // Try to get from cache first
-      const cachedTag = getFromCache(tagId);
-      
-      if (cachedTag) {
-        setTag(cachedTag);
-        setIsLoading(false);
-      } else {
-        // Not in cache, fetch from API
-        const fetchAsync = async () => {
-          if (typeof fetchTagById === 'function') {
-            try {
-              const fetchedTag = await fetchTagById(tagId);
-              if (fetchedTag) {
-                setTag(fetchedTag);
-                addTagToCache(fetchedTag);
-              } else {
-                console.warn("API returned no tag data. Using dummy data.");
-                setTag(dummyTagData);
-              }
-            } catch (error) {
-              console.error("Error fetching tag:", error);
-              setTag(dummyTagData);
-            }
-          } else {
-            console.error('fetchTagById is not a function');
-            setTag(dummyTagData);
-          }
-          setIsLoading(false);
-        };
-        
-        fetchAsync();
-      }
-    } else {
+    if (!tagId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const cachedTag = getFromCache(tagId);
+    if (cachedTag) {
+      setTag(cachedTag);
+      setIsLoading(false);
+      return;
+    }
+
+    if (singleTag) {
+      setTag(singleTag);
+      addTagToCache(singleTag);
+      setIsLoading(false);
+    } else if (!isLoadingTagFromApi) {
       setIsLoading(false);
     }
-  }, [tagId, getFromCache, fetchTagById, addTagToCache]);
+  }, [tagId, singleTag]);
 
-  // Set default background image
   useEffect(() => {
     if (backgroundLibrary.length > 0 && !selectedBgImage) {
       setSelectedBgImage(backgroundLibrary[0].src);
     }
-  }, [selectedBgImage]);
+  }, []);
 
-  // Generate and download the virtual background
-  const handleDownload = async () => {
+  const generateQrCodeData = (tag: Tag | null) => {
+    if (!tag) return '';
+    
+    let qrData = `https://link.bizcotap.com/profile/6829856056316e89705d98`;
+    
+    const additionalData = [];
+    
+    if (showEmail && tag.tagInfo?.email) {
+      additionalData.push(`email:${tag.tagInfo.email}`);
+    }
+    
+    if (showPhone && tag.tagInfo?.phone) {
+      additionalData.push(`phone:${tag.tagInfo.phone}`);
+    }
+    
+    if (additionalData.length > 0) {
+      qrData += `?${additionalData.join('&')}`;
+    }
+    
+    return qrData;
+  };
+
+const handleDownload = async () => {
+  try {
     if (!tag || !selectedBgImage) {
-      message.error('Cannot generate background: Missing data.');
+      alert('Cannot generate background: Missing profile data or background image.');
       return;
     }
 
-    message.loading({ content: 'Generating background...', key: 'generating_bg', duration: 0 });
-
+    const loadingElement = document.createElement('div');
+    loadingElement.id = 'bg-loading-indicator';
+    loadingElement.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;text-align:center;padding:10px;z-index:9999;';
+    loadingElement.textContent = 'Generating background...';
+    document.body.appendChild(loadingElement);
+    
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
-      message.error('Failed to create canvas context.');
-      message.destroy('generating_bg');
+      document.body.removeChild(loadingElement);
+      alert('Failed to create canvas context. Please try again or use a different browser.');
       return;
     }
 
-    const outputWidth = 1920; // Full HD width
-    const outputHeight = 1080; // Full HD height
+    const outputWidth = 1920; 
+    const outputHeight = 1080;
     canvas.width = outputWidth;
     canvas.height = outputHeight;
-
-    // 1. Draw Background Image
+    
+    const bgImg = new window.Image();
+    bgImg.crossOrigin = "anonymous";
+    
     try {
-      const bgImg = new Image();
-      bgImg.crossOrigin = "anonymous";
-      
-      await new Promise((resolve, reject) => {
-        bgImg.onload = resolve;
-        bgImg.onerror = reject;
+      await new Promise<void>((resolve, reject) => {
+        bgImg.onload = () => resolve();
+        bgImg.onerror = (e) => {
+          console.error("Background image loading error:", e);
+          reject(new Error("Failed to load background image"));
+        };
         bgImg.src = selectedBgImage;
       });
       
       ctx.drawImage(bgImg, 0, 0, outputWidth, outputHeight);
+    } catch (error) {
+      document.body.removeChild(loadingElement);
+      alert('Error loading background image. Please try a different image.');
+      return;
+    }
+    
+    if (showQrCode) {
+      const qrCodeSize = condensedView ? outputWidth * 0.075 : outputWidth * 0.1;
+      const qrPadding = qrCodeSize * 0.05;
+      const qrBoxSize = qrCodeSize + 2 * qrPadding;
+      const qrMargin = condensedView ? outputWidth * 0.015 : outputWidth * 0.03;
+      const qrX = outputWidth - qrBoxSize - qrMargin;
+      const qrY = qrMargin;
       
-      // 2. Draw QR Code if enabled
-      if (showQrCode) {
-        const qrCodeSize = condensedView ? outputWidth * 0.075 : outputWidth * 0.1;
-        const qrPadding = qrCodeSize * 0.05;
-        const qrBoxSize = qrCodeSize + 2 * qrPadding;
-        const qrMargin = condensedView ? outputWidth * 0.015 : outputWidth * 0.03;
-        const qrX = outputWidth - qrBoxSize - qrMargin;
-        const qrY = qrMargin;
-        
-        // Draw white background for QR code
-        ctx.fillStyle = 'white';
-        ctx.fillRect(qrX, qrY, qrBoxSize, qrBoxSize);
-        
-        // Draw border for QR code
-        ctx.strokeStyle = qrColor;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(qrX, qrY, qrBoxSize, qrBoxSize);
-        
-        // Generate QR code
-        const qrCodeUrl = `https://link.bizcotap.com/profile/${tag.id}`;
-        const qrApiColor = qrColor.replace('#', '');
-        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.floor(qrCodeSize)}x${Math.floor(qrCodeSize)}&data=${encodeURIComponent(qrCodeUrl)}&color=${qrApiColor}&bgcolor=FFFFFF&qzone=1&format=png`;
-        
-        const qrImg = new Image();
+      ctx.fillStyle = 'white';
+      ctx.fillRect(qrX, qrY, qrBoxSize, qrBoxSize);
+      
+      ctx.strokeStyle = qrColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(qrX, qrY, qrBoxSize, qrBoxSize);
+      
+      const qrCodeUrl = generateQrCodeData(tag);
+      const qrApiColor = qrColor.replace('#', '');
+      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.floor(qrCodeSize)}x${Math.floor(qrCodeSize)}&data=${encodeURIComponent(qrCodeUrl)}&color=${qrApiColor}&bgcolor=FFFFFF&qzone=1&format=png`;
+      
+      try {
+        const qrImg = new window.Image();
         qrImg.crossOrigin = "anonymous";
         
-        await new Promise((resolve, reject) => {
-          qrImg.onload = resolve;
-          qrImg.onerror = reject;
+        await new Promise<void>((resolve, reject) => {
+          qrImg.onload = () => resolve();
+          qrImg.onerror = (e) => {
+            console.error("QR code image loading error:", e);
+            reject(new Error("Failed to load QR code"));
+          };
           qrImg.src = qrImgUrl;
         });
         
         ctx.drawImage(qrImg, qrX + qrPadding, qrY + qrPadding, qrCodeSize, qrCodeSize);
+      } catch (error) {
+        console.error("Error loading QR code:", error);
       }
-      
-      // 3. Draw Text Information
-      if (showName || showJobTitle || showCompany) {
-        ctx.fillStyle = 'white';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-        ctx.shadowBlur = 3;
-        
-        let currentTextY = outputHeight - (condensedView ? outputHeight * 0.02 : outputHeight * 0.04);
-        const textX = condensedView ? outputWidth * 0.02 : outputWidth * 0.04;
-        const lineHeight = condensedView ? outputHeight * 0.035 : outputHeight * 0.045;
-        
-        const textsToDraw = [];
-        if (showCompany && tag.tagInfo.company) {
-          textsToDraw.push(tag.tagInfo.company);
-        }
-        if (showJobTitle && tag.tagInfo.position) {
-          textsToDraw.push(tag.tagInfo.position);
-        }
-        if (showName) {
-          const nameText = `${tag.tagInfo.fname} ${tag.tagInfo.lname}`;
-          textsToDraw.push({ text: nameText, isName: true });
-        }
-        
-        for (let i = 0; i < textsToDraw.length; i++) {
-          const item = textsToDraw[i];
-          let text;
-          let isName = false;
-          
-          if (typeof item === 'string') {
-            text = item;
-          } else {
-            text = item.text;
-            isName = item.isName;
-          }
-          
-          if (isName) {
-            ctx.font = condensedView ? `bold ${outputHeight * 0.035}px Arial` : `bold ${outputHeight * 0.045}px Arial`;
-          } else {
-            ctx.font = condensedView ? `${outputHeight * 0.03}px Arial` : `${outputHeight * 0.04}px Arial`;
-          }
-          
-          ctx.fillText(text, textX, currentTextY);
-          currentTextY -= lineHeight;
-        }
-      }
-      
-      // 4. Trigger Download
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `virtual-background-${tag.tagInfo.fname}-${tag.tagInfo.lname}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      message.success({ content: 'Background downloaded successfully!', key: 'generating_bg' });
-      
-    } catch (error) {
-      console.error("Error generating background:", error);
-      message.error({ content: 'Failed to generate background. Please try again.', key: 'generating_bg' });
     }
-  };
+    
+    // Draw Text Information with TypeScript fixes
+    if (showName || showJobTitle || showCompany || showEmail || showPhone) {
+      ctx.fillStyle = 'white';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.shadowBlur = 3;
+      
+      let currentTextY = outputHeight - (condensedView ? outputHeight * 0.02 : outputHeight * 0.04);
+      const textX = condensedView ? outputWidth * 0.02 : outputWidth * 0.04;
+      const lineHeight = condensedView ? outputHeight * 0.035 : outputHeight * 0.045;
+      
+      // Prepare text items to draw with proper typing
+      const textsToDraw: TextItem[] = [];
+      
+      if (showCompany && tag.tagInfo?.company) {
+        textsToDraw.push(tag.tagInfo.company);
+      }
+      if (showJobTitle && tag.tagInfo?.position) {
+        textsToDraw.push(tag.tagInfo.position);
+      }
+      if (showEmail && tag.tagInfo?.email) {
+        textsToDraw.push(String(tag.tagInfo.email));
+      }
+      
+      if (showPhone && tag.tagInfo?.phone) {
+        textsToDraw.push(String(tag.tagInfo.phone));
+      }
+      if (showName) {
+        const nameText = `${tag.tagInfo?.fname || ''} ${tag.tagInfo?.lname || ''}`.trim();
+        textsToDraw.push({ text: nameText, isName: true });
+      }
+      
+      for (let i = 0; i < textsToDraw.length; i++) {
+        const item = textsToDraw[i];
+        let text: string;
+        let isName = false;
+        
+        if (typeof item === 'string') {
+          text = item;
+        } else {
+          text = item.text;
+          isName = item.isName;
+        }
+        
+        if (isName) {
+          ctx.font = condensedView ? `bold ${outputHeight * 0.035}px Arial` : `bold ${outputHeight * 0.045}px Arial`;
+        } else {
+          ctx.font = condensedView ? `${outputHeight * 0.03}px Arial` : `${outputHeight * 0.04}px Arial`;
+        }
+        
+        ctx.fillText(text, textX, currentTextY);
+        currentTextY -= lineHeight;
+      }
+    }
+    
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.href = dataUrl;
+      downloadLink.download = `virtual-background-${tag.tagInfo?.fname || 'user'}-${tag.tagInfo?.lname || ''}.png`.trim();
+      
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      document.body.removeChild(loadingElement);
+      
+      const successElement = document.createElement('div');
+      successElement.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(82,196,26,0.9);color:white;text-align:center;padding:10px;z-index:9999;';
+      successElement.textContent = 'Background downloaded successfully!';
+      document.body.appendChild(successElement);
+      
+      setTimeout(() => {
+        if (document.body.contains(successElement)) {
+          document.body.removeChild(successElement);
+        }
+      }, 3000);
+    } catch (downloadError) {
+      console.error("Error in download process:", downloadError);
+      document.body.removeChild(loadingElement);
+      alert("Failed to create or download the image. Please try again.");
+    }
+  } catch (error) {
+    console.error("Error generating background:", error);
+    
+    const loadingElement = document.getElementById('bg-loading-indicator');
+    if (loadingElement && document.body.contains(loadingElement)) {
+      document.body.removeChild(loadingElement);
+    }
+    
+    alert(`Failed to generate background: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+  }
+};
 
-  // Loading state
-  if (isLoading || isLoadingTagFromApi) {
+
+  if (typeof window !== 'undefined' && (isLoading || isLoadingTagFromApi)) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Spin size="large" tip="Loading profile data..." />
@@ -271,13 +296,12 @@ const VirtualBackgroundPage = () => {
     );
   }
 
-  // Error state
-  if (!tag) {
+  if (typeof window !== 'undefined' && !tag && !isLoadingTagFromApi) {
     return (
       <div className="p-6 text-center">
         <Alert
           message="Error Loading Profile"
-          description="Could not load profile data. Please try again."
+          description={apiError || "Could not load profile data. Please try again."}
           type="error"
           showIcon
           className="mb-4"
@@ -291,7 +315,7 @@ const VirtualBackgroundPage = () => {
       </div>
     );
   }
-  // Main UI
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Back button and header */}
@@ -306,7 +330,7 @@ const VirtualBackgroundPage = () => {
         </Button>
         <Title level={2} className="mb-1">Virtual Background Creator</Title>
         <Text type="secondary" className="text-lg">
-          Create a personalized virtual background for {tag.tagInfo.fname} {tag.tagInfo.lname}
+          Create a personalized virtual background for {tag?.tagInfo?.fname || ''} {tag?.tagInfo?.lname || ''}
         </Text>
       </div>
 
@@ -389,6 +413,13 @@ const VirtualBackgroundPage = () => {
                   >
                     <span className="font-medium">Job Title</span>
                   </Checkbox>
+                  <Checkbox 
+                    checked={showEmail} 
+                    onChange={e => setShowEmail(e.target.checked)}
+                    className="block"
+                  >
+                    <span className="font-medium">Email</span>
+                  </Checkbox>
                 </div>
                 <div className="space-y-3">
                   <Checkbox 
@@ -406,12 +437,18 @@ const VirtualBackgroundPage = () => {
                   >
                     <span className="font-medium">Company</span>
                   </Checkbox>
+                  <Checkbox 
+                    checked={showPhone} 
+                    onChange={e => setShowPhone(e.target.checked)}
+                    className="block"
+                  >
+                    <span className="font-medium">Phone</span>
+                  </Checkbox>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Background Selection */}
           <Card className="shadow-md border border-gray-200">
             <Tabs defaultActiveKey="1" className="mb-4">
               <Tabs.TabPane tab="Choose from library" key="1">
@@ -458,7 +495,11 @@ const VirtualBackgroundPage = () => {
                       return Upload.LIST_IGNORE;
                     }
                     const reader = new FileReader();
-                    reader.onload = () => setSelectedBgImage(reader.result as string);
+                    reader.onload = (e) => {
+                      if (e.target && typeof e.target.result === 'string') {
+                        setSelectedBgImage(e.target.result);
+                      }
+                    };
                     reader.readAsDataURL(file);
                     return false;
                   }}
@@ -477,7 +518,6 @@ const VirtualBackgroundPage = () => {
           </Card>
         </div>
 
-        {/* Right Column - Preview and Download */}
         <div className="lg:col-span-7">
           <Card className="shadow-lg border border-gray-200 overflow-hidden">
             <div className="mb-4">
@@ -495,32 +535,40 @@ const VirtualBackgroundPage = () => {
                       preview={false}
                     />
                     
-                    {/* Preview overlay with name, position, etc. */}
-                    {(showName || showJobTitle || showCompany) && (
+                    {(showName || showJobTitle || showCompany || showEmail || showPhone) && tag && (
                       <div className="absolute bottom-0 left-0 p-4 text-white">
                         {showName && (
                           <div className={`font-bold ${condensedView ? 'text-lg' : 'text-2xl'} text-shadow`}>
-                            {tag.tagInfo.fname} {tag.tagInfo.lname}
+                            {tag.tagInfo?.fname || ''} {tag.tagInfo?.lname || ''}
                           </div>
                         )}
-                        {showJobTitle && tag.tagInfo.position && (
+                        {showJobTitle && tag.tagInfo?.position && (
                           <div className={`${condensedView ? 'text-sm' : 'text-base'} text-shadow`}>
                             {tag.tagInfo.position}
                           </div>
                         )}
-                        {showCompany && tag.tagInfo.company && (
+                        {showCompany && tag.tagInfo?.company && (
                           <div className={`${condensedView ? 'text-sm' : 'text-base'} text-shadow`}>
                             {tag.tagInfo.company}
+                          </div>
+                        )}
+                        {showEmail && tag.tagInfo?.email && (
+                          <div className={`${condensedView ? 'text-sm' : 'text-base'} text-shadow`}>
+                            {tag.tagInfo.email}
+                          </div>
+                        )}
+                        {showPhone && tag.tagInfo?.phone && (
+                          <div className={`${condensedView ? 'text-sm' : 'text-base'} text-shadow`}>
+                            {tag.tagInfo.phone}
                           </div>
                         )}
                       </div>
                     )}
                     
-                    {/* QR Code preview */}
-                    {showQrCode && (
+                    {showQrCode && tag && (
                       <div className={`absolute top-3 right-3 bg-white p-1 rounded-md border-2 ${condensedView ? 'w-16 h-16' : 'w-24 h-24'}`} style={{ borderColor: qrColor }}>
                         <Image
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://link.bizcotap.com/profile/${tag.id}`)}&color=${qrColor.replace('#','')}&bgcolor=FFFFFF`}
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generateQrCodeData(tag))}&color=${qrColor.replace('#','')}&bgcolor=FFFFFF`}
                           alt="QR Code"
                           className="w-full h-full"
                           preview={false}
@@ -564,12 +612,14 @@ const VirtualBackgroundPage = () => {
               <Text type="secondary" className="text-xs mt-1">
                 When someone scans this QR code, their contact information will be captured in your leads section.
               </Text>
+              <Text type="secondary" className="text-xs mt-1">
+                QR code now includes {showEmail ? 'email' : ''}{showEmail && showPhone ? ' and ' : ''}{showPhone ? 'phone number' : ''} information for enhanced lead generation.
+              </Text>
             </div>
           </Card>
         </div>
       </div>
       
-      {/* Navigation buttons */}
       <div className="mt-8 flex justify-between">
         <Button 
           icon={<ArrowLeftOutlined />} 
@@ -593,7 +643,7 @@ export default VirtualBackgroundPage;
 const styleTagId = 'virtual-background-page-styles';
 if (typeof document !== 'undefined' && !document.getElementById(styleTagId)) {
   const style = document.createElement('style');
-  style.id = styleTagId;
+  style.id = styleTagId
   style.innerHTML = `
     .ant-radio-button-wrapper {
         line-height: 28px; /* Align checkmark better */

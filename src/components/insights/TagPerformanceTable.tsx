@@ -100,7 +100,7 @@ export const TagPerformanceTable: React.FC<TagPerformanceTableProps> = ({
   return (
     <Card
       title="Your Digital Business Cards"
-      bordered={false}
+      variant="outlined"
       className="shadow-sm"
       extra={<Button type="primary" size="small">Create New Card</Button>}
     >

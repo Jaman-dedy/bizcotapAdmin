@@ -22,6 +22,8 @@ export interface Email {
   }
   
   export interface TagInfo {
+    email: boolean;
+    phone: boolean;
     dob: string | null;
     mine?: number;
     fname: string;
@@ -197,6 +199,30 @@ export interface Email {
         return await response.json();
       } catch (error) {
         console.error(`Error fetching tag with ID ${id}:`, error);
+        return null;
+      }
+    },
+
+    async getSingleTagByTuid(tuid: string): Promise<Tag | null> {
+      try {
+        const response = await fetch(`${API_BASE_URL}/tag/${tuid}`, {
+          headers: getAuthHeaders(),
+          cache: 'no-store',
+        });
+
+        console.log('response single tag======================>>>', response) 
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            return null;
+          }
+          console.error(`API error: ${response.status}`);
+          return null;
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Error fetching tag with ID ${tuid}:`, error);
         return null;
       }
     },

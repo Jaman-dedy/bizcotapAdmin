@@ -5,8 +5,22 @@ import { UserOutlined, TeamOutlined, EyeOutlined, RiseOutlined, InfoCircleOutlin
 import { useUsers } from '@/hooks/users/useUsers';
 import { useCompanies } from '@/hooks/companies/useCompanies';
 
+interface PlatformMetrics {
+  userGrowth: number;
+  newUsersThisMonth: number;
+  totalViews: number;
+  conversionRate: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface DashboardData {
+  platformMetrics: PlatformMetrics;
+  [key: string]: unknown;
+}
+
 interface KeyMetricsSectionProps {
   loading: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
 }
 
@@ -26,7 +40,7 @@ const KeyMetricsSection: React.FC<KeyMetricsSectionProps> = ({ loading, data }) 
 
   // Use real API data for users and companies, mock data for the rest
   const totalUsers = usersResponse?.length || 0;
-  const totalCompanies = companiesResponse?.length || 0;
+  const totalCompanies = companiesResponse?.data?.length || 0;
 
   return (
     <Skeleton loading={loading || isLoadingUsers || isLoadingCompanies} active paragraph={{ rows: 1 }}>

@@ -55,7 +55,7 @@ export default function CompanyAdminDashboard() {
         setError(null);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
-        setError("Unable to load dashboard data. Please try again later.");
+        // setError("Unable to load dashboard data. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -191,7 +191,7 @@ export default function CompanyAdminDashboard() {
     // Updated activity data to match the Activity interface
     recentActivity: [
       {
-        type: "view" as "view",
+        type: "view" as const,
         tagId: 123,
         tagTuid: "abc123",
         tagName: "John Smith",
@@ -199,7 +199,7 @@ export default function CompanyAdminDashboard() {
         location: { country: "United States", region: "California", city: "San Francisco" },
       },
       {
-        type: "action" as "action",
+        type: "action" as const,
         actionType: "phone_call",
         tagId: 123,
         tagTuid: "abc123",
@@ -208,7 +208,7 @@ export default function CompanyAdminDashboard() {
         location: { country: "United States", region: "California", city: "San Francisco" },
       },
       {
-        type: "view" as "view",
+        type: "view" as const,
         tagId: 124,
         tagTuid: "def456",
         tagName: "Jane Doe",
@@ -216,7 +216,7 @@ export default function CompanyAdminDashboard() {
         location: { country: "Canada", region: "Ontario", city: "Toronto" },
       },
       {
-        type: "action" as "action",
+        type: "action" as const,
         actionType: "email",
         tagId: 124,
         tagTuid: "def456",
@@ -281,115 +281,132 @@ export default function CompanyAdminDashboard() {
 
       {/* Main content tabs */}
       <Card variant="outlined" className="shadow-sm">
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Overview" key="1">
-            <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
-              <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>
-                  <TrendVisualization />
-                </Col>
-                <Col xs={24} lg={8}>
-                  <GeoDistributionCard
-                    countries={data.geoInsights.countries}
-                    cities={data.geoInsights.cities}
-                    total={data.companyMetrics.totalViews}
+  <Tabs 
+    activeKey={activeTab} 
+    onChange={setActiveTab}
+    items={[
+      {
+        key: "1",
+        label: "Overview",
+        children: (
+          <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={16}>
+                <TrendVisualization />
+              </Col>
+              <Col xs={24} lg={8}>
+                <GeoDistributionCard
+                  countries={data.geoInsights.countries}
+                  cities={data.geoInsights.cities}
+                  total={data.companyMetrics.totalViews}
+                />
+              </Col>
+              <Col xs={24} lg={12}>
+                <TagPerformanceTable 
+                  tags={data.trendingTags.map((tag: any) => ({
+                    id: tag.id,
+                    tuid: tag.tuid,
+                    name: tag.name,
+                    views: tag.recentViews,
+                    actions: Math.round(tag.recentViews * (data.companyMetrics.conversionRate / 100)),
+                    createdAt: new Date().toISOString() // Sample date
+                  }))} 
+                />
+              </Col>
+              <Col xs={24} lg={12}>
+                <TeamPerformanceCard members={data.teamPerformance} />
+              </Col>
+            </Row>
+          </Skeleton>
+        ),
+      },
+      {
+        key: "2",
+        label: "Team Analytics",
+        children: (
+          <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24}>
+                <TeamPerformanceCard members={data.teamPerformance} />
+              </Col>
+              <Col xs={24} md={12}>
+                <Card title="Team Member Comparison" variant="outlined" className="shadow-sm">
+                  <div className="h-80 flex items-center justify-center text-gray-400">
+                    Team performance comparison chart
+                    {/* In a real implementation, you would add a chart here */}
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={24} md={12}>
+                <ActionBreakdownCard 
+                  data={data.actionBreakdown} 
+                  title="Team Action Types"
+                />
+              </Col>
+            </Row>
+          </Skeleton>
+        ),
+      },
+      {
+        key: "3",
+        label: "Geographic Insights",
+        children: (
+          <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={16}>
+                <Card title="Global Reach" variant="outlined" className="shadow-sm">
+                  <div className="h-96 flex items-center justify-center text-gray-400">
+                    World map visualization
+                    {/* In a real implementation, you would add a map component here */}
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={24} lg={8}>
+                <GeoDistributionCard
+                  countries={data.geoInsights.countries}
+                  cities={data.geoInsights.cities}
+                  total={data.companyMetrics.totalViews}
+                />
+              </Col>
+              <Col xs={24}>
+                <Card title="Regional Performance" variant="outlined" className="shadow-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {data.geoInsights.regions.slice(0, 6).map((region: any, index: number) => (
+                      <Card key={index} size="small" variant="outlined">
+                        <div className="text-lg font-medium">{region.region}</div>
+                        <div className="text-2xl font-bold mt-2">{region.count}</div>
+                        <div className="text-sm text-gray-500">
+                          views ({((region.count / data.companyMetrics.totalViews) * 100).toFixed(1)}%)
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          </Skeleton>
+        ),
+      },
+      {
+        key: "4",
+        label: "Activity Log",
+        children: (
+          <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24}>
+                <Card title="Recent Activity" variant="outlined" className="shadow-sm">
+                  <ActivityTimeline 
+                    activities={data.recentActivity as Activity[]} 
                   />
-                </Col>
-                <Col xs={24} lg={12}>
-                  <TagPerformanceTable 
-                    tags={data.trendingTags.map((tag: any) => ({
-                      id: tag.id,
-                      tuid: tag.tuid,
-                      name: tag.name,
-                      views: tag.recentViews,
-                      actions: Math.round(tag.recentViews * (data.companyMetrics.conversionRate / 100)),
-                      createdAt: new Date().toISOString() // Sample date
-                    }))} 
-                  />
-                </Col>
-                <Col xs={24} lg={12}>
-                  <TeamPerformanceCard members={data.teamPerformance} />
-                </Col>
-              </Row>
-            </Skeleton>
-          </TabPane>
-          
-          <TabPane tab="Team Analytics" key="2">
-            <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
-              <Row gutter={[16, 16]}>
-                <Col xs={24}>
-                  <TeamPerformanceCard members={data.teamPerformance} />
-                </Col>
-                <Col xs={24} md={12}>
-                  <Card title="Team Member Comparison" variant="outlined" className="shadow-sm">
-                    <div className="h-80 flex items-center justify-center text-gray-400">
-                      Team performance comparison chart
-                      {/* In a real implementation, you would add a chart here */}
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={24} md={12}>
-                  <ActionBreakdownCard 
-                    data={data.actionBreakdown} 
-                    title="Team Action Types"
-                  />
-                </Col>
-              </Row>
-            </Skeleton>
-          </TabPane>
-          
-          <TabPane tab="Geographic Insights" key="3">
-            <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
-              <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>
-                  <Card title="Global Reach" variant="outlined" className="shadow-sm">
-                    <div className="h-96 flex items-center justify-center text-gray-400">
-                      World map visualization
-                      {/* In a real implementation, you would add a map component here */}
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <GeoDistributionCard
-                    countries={data.geoInsights.countries}
-                    cities={data.geoInsights.cities}
-                    total={data.companyMetrics.totalViews}
-                  />
-                </Col>
-                <Col xs={24}>
-                  <Card title="Regional Performance" variant="outlined" className="shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {data.geoInsights.regions.slice(0, 6).map((region: any, index: number) => (
-                        <Card key={index} size="small" variant="outlined">
-                          <div className="text-lg font-medium">{region.region}</div>
-                          <div className="text-2xl font-bold mt-2">{region.count}</div>
-                          <div className="text-sm text-gray-500">
-                            views ({((region.count / data.companyMetrics.totalViews) * 100).toFixed(1)}%)
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
-            </Skeleton>
-          </TabPane>
-          
-          <TabPane tab="Activity Log" key="4">
-            <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
-              <Row gutter={[16, 16]}>
-                <Col xs={24}>
-                  <Card title="Recent Activity" variant="outlined" className="shadow-sm">
-                    <ActivityTimeline 
-                      activities={data.recentActivity as Activity[]} 
-                    />
-                  </Card>
-                </Col>
-              </Row>
-            </Skeleton>
-          </TabPane>
-        </Tabs>
-      </Card>
+                </Card>
+              </Col>
+            </Row>
+          </Skeleton>
+        ),
+      },
+    ]}
+  />
+</Card>
     </div>
   );
 }

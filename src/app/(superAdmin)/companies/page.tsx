@@ -30,7 +30,6 @@ import {
   DeleteOutlined, 
   ExclamationCircleOutlined, 
   TeamOutlined, 
-  UserOutlined,
   LinkOutlined,
   BankOutlined,
   UploadOutlined
