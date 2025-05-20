@@ -109,6 +109,7 @@ export default function TagsTable() {
     setCurrentTag(record);
     addToCache(record);
     message.info(`Create email signature for ${record.tagInfo.fname}`);
+    router.push(`/companyAdmin/profiles/email-signature/${record.tuid}`);
   };
 
   const columns: ColumnsType<Tag> = [
