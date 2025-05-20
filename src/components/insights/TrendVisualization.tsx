@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area, Cell } from 'recharts';
 import { Card, Radio, Tabs, Badge, Select } from 'antd';
-
-const { TabPane } = Tabs;
 
 const TrendVisualization = () => {
   const [chartType, setChartType] = useState('line');
@@ -122,13 +120,26 @@ const TrendVisualization = () => {
   );
 
   return (
-    <Card title="Digital Card Analytics" bordered={false} className="shadow-sm">
+    <Card title="Digital Card Analytics" variant="outlined" className="shadow-sm">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-        <Tabs defaultActiveKey="1" className="mb-0">
-          <TabPane tab={<span><Badge color="#1890ff" />Views & Actions</span>} key="1" />
-          <TabPane tab={<span><Badge color="#fa8c16" />Conversion Rate</span>} key="2" />
-          <TabPane tab={<span><Badge color="#52c41a" />Action Types</span>} key="3" />
-        </Tabs>
+        <Tabs 
+          defaultActiveKey="1" 
+          className="mb-0"
+          items={[
+            {
+              key: "1",
+              label: <span><Badge color="#1890ff" />Views & Actions</span>
+            },
+            {
+              key: "2",
+              label: <span><Badge color="#fa8c16" />Conversion Rate</span>
+            },
+            {
+              key: "3",
+              label: <span><Badge color="#52c41a" />Action Types</span>
+            }
+          ]}
+        />
         
         <div className="flex gap-4">
           <Radio.Group value={chartType} onChange={e => setChartType(e.target.value)} size="small">

@@ -57,7 +57,7 @@ const PROTECTED_ROUTES = [
 ];
 
 // Auth-related routes that should not trigger redirects
-const AUTH_ROUTES = ['/login', '/register', '/reset-password'];
+const AUTH_ROUTES = ['/', '/register', '/reset-password'];
 
 // Initialize with null but specify the type
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Only redirect if not already on an auth page
       if (!AUTH_ROUTES.some(route => pathname?.includes(route))) {
-        router.push('/login');
+        router.push('/');
       }
     }
   };
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!token) {
           if (isProtectedRoute(pathname)) {
             console.log('No token, redirecting from protected route');
-            router.push('/login');
+            router.push('/');
           }
           setLoading(false);
           return;

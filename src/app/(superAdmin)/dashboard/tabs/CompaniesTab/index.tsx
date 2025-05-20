@@ -51,7 +51,7 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({
   const processedCompanies = React.useMemo(() => {
     if (!companies) return [];
 
-    return companies.map(company => ({
+    return companies.map((company: { id: number; }) => ({
       ...company,
       userCount: getUserCountByCompany(company.id),
       // These fields don't exist in our real API yet, so we're providing placeholders

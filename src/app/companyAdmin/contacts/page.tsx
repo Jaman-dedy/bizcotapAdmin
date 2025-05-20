@@ -88,7 +88,7 @@ export default function TagsTable() {
 
   const companyFilters = Array.from(new Set(companyContacts.map(tag => tag.tagInfo.company)))
     .filter(Boolean)
-    .map(company => ({ text: company, value: company }));
+    .map(company => ({ text: company, value: company })) as { text: string; value: string }[];
 
   const columns: ColumnsType<Tag> = [
     {
@@ -256,7 +256,7 @@ export default function TagsTable() {
           showIcon
           action={
             <Button type="primary" icon={<LoginOutlined />} onClick={() => {
-              window.location.href = '/login'; 
+              window.location.href = '/l'; 
             }}>
               Log In
             </Button>

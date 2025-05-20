@@ -64,7 +64,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   return (
     <Card
       title="Recent Activity"
-      bordered={false}
+      variant="outlined"
       className="h-full shadow-sm"
     >
       <Timeline>

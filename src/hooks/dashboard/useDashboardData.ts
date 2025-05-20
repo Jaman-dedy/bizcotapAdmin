@@ -98,9 +98,9 @@ export const useFetchDashboardData = (selectedCompany: number | null): UseDashbo
     ].filter(Boolean);
 
     if (errors.length > 0) {
-      setError("Error loading some dashboard data. Please try again.");
+      console.log("Error loading some dashboard data. Please try again.");
     } else {
-      setError(null);
+      console.log("Dashboard data loaded successfully.");
     }
   }, [
     countsError,

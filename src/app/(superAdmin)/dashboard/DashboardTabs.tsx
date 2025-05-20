@@ -8,12 +8,11 @@ import CompaniesTab from './tabs/CompaniesTab';
 import TagOrdersTab from './tabs/TagOrdersTab';
 import GeographicInsightsTab from './tabs/GeographicInsightsTab';
 
-const { TabPane } = Tabs;
-
 interface DashboardTabsProps {
   activeTab: string;
   setActiveTab: (key: string) => void;
   loading: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   selectedCompany: number | null;
   setSelectedCompany: (id: number | null) => void;
@@ -27,21 +26,20 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   selectedCompany,
   setSelectedCompany
 }) => {
-  return (
-    <Tabs activeKey={activeTab} onChange={setActiveTab}>
-      <TabPane
-        tab={<span><AppstoreOutlined /> Platform Overview</span>}
-        key="1"
-      >
+  const items = [
+    {
+      key: "1",
+      label: <span><AppstoreOutlined /> Platform Overview</span>,
+      children: (
         <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
           <PlatformOverviewTab data={data} />
         </Skeleton>
-      </TabPane>
-
-      <TabPane
-        tab={<span><TeamOutlined /> Companies</span>}
-        key="2"
-      >
+      )
+    },
+    {
+      key: "2",
+      label: <span><TeamOutlined /> Companies</span>,
+      children: (
         <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
           <CompaniesTab
             data={data}
@@ -49,26 +47,30 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
             setSelectedCompany={setSelectedCompany}
           />
         </Skeleton>
-      </TabPane>
-
-      <TabPane
-        tab={<span><PieChartOutlined /> Tag Orders</span>}
-        key="3"
-      >
+      )
+    },
+    {
+      key: "3",
+      label: <span><PieChartOutlined /> Tag Orders</span>,
+      children: (
         <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
           <TagOrdersTab data={data} />
         </Skeleton>
-      </TabPane>
-
-      <TabPane
-        tab={<span><GlobalOutlined /> Geographic Insights</span>}
-        key="4"
-      >
+      )
+    },
+    {
+      key: "4",
+      label: <span><GlobalOutlined /> Geographic Insights</span>,
+      children: (
         <Skeleton loading={loading} active paragraph={{ rows: 12 }}>
           <GeographicInsightsTab data={data} />
         </Skeleton>
-      </TabPane>
-    </Tabs>
+      )
+    }
+  ];
+
+  return (
+    <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
   );
 };
 

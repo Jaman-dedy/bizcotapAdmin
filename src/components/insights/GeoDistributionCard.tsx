@@ -30,7 +30,7 @@ export const GeoDistributionCard: React.FC<GeoDistributionCardProps> = ({
   return (
     <Card
       title="Geographic Distribution"
-      bordered={false}
+      variant="outlined"
       className="h-full shadow-sm"
     >
       <div className="space-y-4">

@@ -545,7 +545,7 @@ const UsersPage: React.FC = () => {
         </Space>
       ),
       width: 100,
-      fixed: 'right' as 'right',
+      fixed: 'right' as const,
     },
   ];
 

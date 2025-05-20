@@ -833,5 +833,21 @@ span.flatpickr-weekday,
     0 1px 2px 0 rgba(16, 24, 40, 0.06);
   opacity: 0.8;
   cursor: grabbing; /* Changes the cursor to indicate dragging */
+
 }
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) rotate(15deg);
+  }
+  100% {
+    transform: translateX(250%) rotate(15deg);
+  }
+}
+
+.animate-shine {
+  animation: shine 3s infinite linear;
+}
+
+
 @import '../styles/antd-preflight.css';

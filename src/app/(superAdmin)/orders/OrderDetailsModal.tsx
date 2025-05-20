@@ -107,7 +107,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       dataIndex: 'price',
       key: 'price',
       render: (price: number) => formatCurrency(price),
-      align: 'right' as 'right',
+      align: 'right' as const,
     },
     {
       title: 'Quantity',
@@ -116,13 +116,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       render: (quantity: number) => (
         <Tag className="quantity-tag">{quantity}</Tag>
       ),
-      align: 'center' as 'center',
+      align: 'center' as const,
     },
     {
       title: 'Total',
       key: 'total',
       render: (_, item: OrderItem) => formatCurrency(item.price * item.quantity),
-      align: 'right' as 'right',
+      align: 'right' as const,
     },
   ];
 

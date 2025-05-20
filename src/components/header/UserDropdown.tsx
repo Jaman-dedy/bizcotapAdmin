@@ -36,7 +36,7 @@ export default function UserDropdown() {
   async function handleLogout() {
     try {
       await logoutUser();
-      window.location.href = "/login"; // Redirect to login page
+      window.location.href = "/"; // Redirect to login page
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -45,7 +45,7 @@ export default function UserDropdown() {
   // If no user is logged in, don't render the dropdown
   if (!user) {
     return (
-      <Link href="/login" className="flex items-center text-gray-700 dark:text-gray-400">
+      <Link href="/" className="flex items-center text-gray-700 dark:text-gray-400">
         <span className="font-medium text-theme-sm">Sign In</span>
       </Link>
     );

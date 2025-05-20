@@ -23,7 +23,7 @@ const PROTECTED_ROUTES = [
 // Define routes that should bypass authentication checks
 const PUBLIC_ROUTES = [
   '/',
-  '/login',
+  '/',
   '/register',
   '/reset-password',
   '/api',
@@ -59,7 +59,7 @@ export function middleware(request: NextRequest) {
   
   // If no token exists, redirect to login with appropriate parameters
   if (!token) {
-    const url = new URL('/login', request.url);
+    const url = new URL('/', request.url);
     url.searchParams.set('callbackUrl', pathname);
     // Don't set expired=true here since the token might not have existed in the first place
     return NextResponse.redirect(url);
@@ -71,14 +71,14 @@ export function middleware(request: NextRequest) {
     
     // Check expiration (exp is in seconds, Date.now() is in milliseconds)
     if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-      const url = new URL('/login', request.url);
+      const url = new URL('/', request.url);
       url.searchParams.set('expired', 'true');
       url.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(url);
     }
   } catch (error) {
     // If token can't be decoded, it's invalid
-    const url = new URL('/login', request.url);
+    const url = new URL('/', request.url);
     url.searchParams.set('error', 'Invalid authentication token');
     url.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(url);

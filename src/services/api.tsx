@@ -8,31 +8,23 @@ const api = axios.create({
   }
 });
 
-// Log API configuration in development environment
 if (process.env.NODE_ENV === 'development') {
   console.log('API Base URL:', api.defaults.baseURL);
 }
 
-// Add request interceptor to attach auth token
 api.interceptors.request.use(
   (config) => {
-    // Skip token for auth endpoints
     if (config.url?.includes('/auth/login') || 
         config.url?.includes('/auth/register') || 
         config.url?.includes('/auth/reset-password')) {
       return config;
     }
     
-    // Add auth token if available
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       
       if (token) {
-        // Set headers safely
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${token}`
-        };
+        (config.headers as any).Authorization = `Bearer ${token}`;
       }
     }
     
@@ -70,7 +62,7 @@ api.interceptors.response.use(
           
           // Use timeout to allow current code to complete
           setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = '/';
             
             // Reset redirect flag after redirect
             setTimeout(() => {

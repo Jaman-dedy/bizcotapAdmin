@@ -130,12 +130,10 @@ export default function TagsTable() {
     message.success('Contact list refreshed');
   };
 
-  // Extract unique companies for filtering
   const companyFilters = Array.from(new Set(tags.map(tag => tag.tagInfo.company)))
     .filter(Boolean)
-    .map(company => ({ text: company, value: company }));
+    .map(company => ({ text: company, value: company })) as { text: string; value: string }[];
 
-  // Define columns for the table - separated profile pic and names, removed location under company
   const columns: ColumnsType<Tag> = [
     {
       title: '#',
@@ -305,7 +303,7 @@ export default function TagsTable() {
           action={
             <Button type="primary" icon={<LoginOutlined />} onClick={() => {
               // Redirect to login page or open login modal
-              window.location.href = '/login'; // Adjust to your login path
+              window.location.href = '/'; // Adjust to your login path
             }}>
               Log In
             </Button>

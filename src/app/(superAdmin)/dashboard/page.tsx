@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Alert, Button, DatePicker, Skeleton, message } from "antd";
 import { DownloadOutlined, ReloadOutlined } from "@ant-design/icons";
 import type { Dayjs } from "dayjs";
@@ -13,6 +14,7 @@ import { useFetchDashboardData } from "@/hooks/dashboard/useDashboardData";
 const { RangePicker } = DatePicker;
 
 export default function SuperAdminDashboard() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [activeTab, setActiveTab] = useState("1");
   const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
