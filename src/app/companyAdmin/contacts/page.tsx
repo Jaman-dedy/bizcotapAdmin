@@ -1,42 +1,102 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { Table, Button, Input, Typography, Dropdown, message, Tooltip, Empty, Alert, Avatar, Card, Modal, Badge, Space } from 'antd';
+import { Table, Button, Input, Typography, message, Tooltip, Empty, Alert, Avatar, Card, Badge } from 'antd';
 import {
   SearchOutlined,
-  MoreOutlined,
   EditOutlined,
   EyeOutlined,
   MailOutlined,
   LoginOutlined,
-  QrcodeOutlined,
   PlusOutlined,
-  DeleteOutlined,
   ReloadOutlined,
-  ExclamationCircleOutlined,
-  FilterOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  EnvironmentOutlined
+  PhoneOutlined,
+  CommentOutlined,
+  UserOutlined,
+  BankOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { Tag, Email } from '@/services/tagsService';
+import { Tag } from '@/services/tagsService';
 import useTags from '@/hooks/useTags';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { useTagsContext } from '@/context/tags/TagsContext';
 
 const { Title, Text } = Typography;
-const { confirm } = Modal;
 
-export default function TagsTable() {
+// Define interfaces based on the actual data structure
+interface TagInfo {
+  role: string;
+  fname: string;
+  lname: string;
+  title?: string;
+  company?: string | null;
+  position?: string;
+  avatar?: string | null;
+  // Add other properties as needed
+}
+
+interface TagUser {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface TagData {
+  id: number;
+  tuid: string;
+  companyId: number | null;
+  tagInfo: TagInfo;
+  isActive: boolean;
+  hasContact: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: TagUser;
+  company: any | null;
+}
+
+interface FormConfigData {
+  id: number;
+  formTitle: string;
+  nameField: string | null;
+  emailField: string | null;
+  phoneField: string | null;
+  companyField: string | null;
+  messageField: string | null;
+  submitButtonText: string;
+  thankYouMessage: string;
+  hasExchanged: boolean;
+  tag: TagData;
+  // Other properties
+}
+
+interface ContactsData {
+  formConfigs: FormConfigData[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export default function ContactsTable() {
   const [searchText, setSearchText] = useState<string>('');
-  const [sortedInfo, setSortedInfo] = useState<any>({});
-  const [filteredInfo, setFilteredInfo] = useState<any>({});
-  const {  companyContacts, fetchCompanyContacts, isLoading, error, fetchMyTags, deleteTag } = useTags();
+  const { companyContacts, fetchCompanyContacts, updateFormConfig, isLoading, error } = useTags();
   const router = useRouter();
-
   const { setCurrentTag, addToCache } = useTagsContext();
+
+  // Extract the formConfigs array from companyContacts
+  const formConfigs = companyContacts && 
+    typeof companyContacts === 'object' && 
+    'formConfigs' in companyContacts && 
+    Array.isArray(companyContacts.formConfigs) 
+      ? companyContacts.formConfigs 
+      : [];
+
+  // For debugging
+  useEffect(() => {
+    console.log("companyContacts:", companyContacts);
+    console.log("formConfigs:", formConfigs);
+  }, [companyContacts]);
 
   useEffect(() => {
     if (error) {
@@ -51,46 +111,34 @@ export default function TagsTable() {
     ).toUpperCase();
   };
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
-    setFilteredInfo(filters);
-    setSortedInfo(sorter);
+  // const handleView = (formConfig: FormConfigData) => {
+  //   if (formConfig.tag) {
+  //     setCurrentTag(formConfig.tag);
+  //     addToCache(formConfig.tag);
+  //     router.push(`https://link.bizcotap.com/profile/${formConfig.tag.tuid}`);
+  //   }
+  // };
+
+  const handleMarkAsExchanged = async (formConfig: FormConfigData) => {
+    try {
+      const result = await updateFormConfig(formConfig.id, { hasExchanged: true });
+      if (result.success) {
+        message.success('Contact marked as exchanged');
+        fetchCompanyContacts(); // Refresh the list to ensure the UI is updated
+      } else {
+        message.error(result.error || 'Failed to update contact status');
+      }
+    } catch (err) {
+      message.error('Failed to update contact status');
+      console.error(err);
+    }
   };
-
-  const clearAll = () => {
-    setFilteredInfo({});
-    setSortedInfo({});
-    setSearchText('');
-  };
-
-  const filteredTags = companyContacts.filter(tag => {
-    const searchLower = searchText.toLowerCase();
-    const fname = tag.tagInfo.fname?.toLowerCase() || '';
-    const lname = tag.tagInfo.lname?.toLowerCase() || '';
-    const emails = tag.tagInfo.emails?.map(e => e.value.toLowerCase()) || [];
-    const company = tag.tagInfo.company?.toLowerCase() || '';
-
-    return fname.includes(searchLower) ||
-           lname.includes(searchLower) ||
-           emails.some(email => email.includes(searchLower)) ||
-           company.includes(searchLower);
-  });
-
-  const handleView = (tag: Tag) => {
-    setCurrentTag(tag); 
-    addToCache(tag);    
-    router.push(`https://link.bizcotap.com/profile/6829856056316e89705d98`);
-  };
-
   const refreshData = () => {
-    fetchCompanyContacts(1);
+    fetchCompanyContacts();
     message.success('Contact list refreshed');
   };
 
-  const companyFilters = Array.from(new Set(companyContacts.map(tag => tag.tagInfo.company)))
-    .filter(Boolean)
-    .map(company => ({ text: company, value: company })) as { text: string; value: string }[];
-
-  const columns: ColumnsType<Tag> = [
+  const columns: ColumnsType<FormConfigData> = [
     {
       title: '#',
       key: 'index',
@@ -107,11 +155,12 @@ export default function TagsTable() {
       className: 'text-center',
       render: (_, record) => (
         <Avatar
-          src={record.tagInfo.avatar}
+          src={record.tag?.tagInfo?.avatar}
           size={50}
           className="bg-blue-500 flex-shrink-0 mx-auto"
         >
-          {!record.tagInfo.avatar && getInitials(record.tagInfo.fname, record.tagInfo.lname)}
+          {!record.tag?.tagInfo?.avatar && record.tag?.tagInfo && 
+            getInitials(record.tag.tagInfo.fname || '', record.tag.tagInfo.lname || '')}
         </Avatar>
       ),
     },
@@ -122,111 +171,93 @@ export default function TagsTable() {
       render: (_, record) => (
         <div>
           <div className="font-medium text-gray-900">
-            {record.tagInfo.fname} {record.tagInfo.lname}
+            {record.nameField || 
+              (record.tag?.tagInfo ? 
+                `${record.tag.tagInfo.fname || ''} ${record.tag.tagInfo.lname || ''}` : 
+                'Unknown')}
           </div>
-          {record.tagInfo.position && (
+          {record.tag?.tagInfo?.position && (
             <div className="text-sm text-gray-500">
-              {record.tagInfo.position}
+              {record.tag.tagInfo.position}
             </div>
           )}
         </div>
       ),
-      sorter: (a, b) => {
-        const nameA = `${a.tagInfo.fname} ${a.tagInfo.lname}`;
-        const nameB = `${b.tagInfo.fname} ${b.tagInfo.lname}`;
-        return nameA.localeCompare(nameB);
-      },
-      sortOrder: sortedInfo.columnKey === 'name' && sortedInfo.order,
     },
     {
-      title: 'Company',
-      key: 'company',
+      title: 'Contact Information',
+      key: 'contactInfo',
       className: 'text-left',
-      width: '30%',
       render: (_, record) => (
-        <div className="text-gray-700 font-medium">
-          {record.tagInfo.company || 'N/A'}
+        <div className="space-y-1">
+          {record.emailField && (
+            <div className="flex items-center">
+              <MailOutlined className="mr-2 text-green-500" /> 
+              <Text>{record.emailField}</Text>
+            </div>
+          )}
+          {record.phoneField && (
+            <div className="flex items-center">
+              <PhoneOutlined className="mr-2 text-purple-500" /> 
+              <Text>{record.phoneField}</Text>
+            </div>
+          )}
+          {(record.companyField || record.tag?.tagInfo?.company) && (
+            <div className="flex items-center">
+              <BankOutlined className="mr-2 text-orange-500" /> 
+              <Text>{record.companyField || record.tag?.tagInfo?.company}</Text>
+            </div>
+          )}
+          {record.messageField && record.messageField !== "value" && (
+            <div className="flex items-center">
+              <CommentOutlined className="mr-2 text-cyan-500" /> 
+              <Text>{record.messageField}</Text>
+            </div>
+          )}
         </div>
       ),
-      sorter: (a, b) => (a.tagInfo.company || '').localeCompare(b.tagInfo.company || ''),
-      sortOrder: sortedInfo.columnKey === 'company' && sortedInfo.order,
-      filters: companyFilters,
-      filteredValue: filteredInfo.company || null,
-      onFilter: (value, record) => record.tagInfo.company === value,
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      width: '100px',
+      className: 'text-center',
+      render: (_, record) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          record.hasExchanged 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-yellow-100 text-yellow-800'
+        }`}>
+          {record.hasExchanged ? 'Exchanged' : 'Pending'}
+        </span>
+      ),
     },
     {
       title: 'Actions',
       key: 'actions',
       className: 'text-center',
-      width: '20%',
+      width: '120px',
       render: (_, record) => (
         <div className="flex justify-center space-x-2">
           <Button
             type="primary"
             size="middle"
             icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
+            // onClick={() => handleView(record)}
             className="bg-blue-500 hover:bg-blue-600 text-white"
           />
-          {/* <Button
-            type="default"
+          <Button
+            type={record.hasExchanged ? "default" : "primary"}
             size="middle"
             icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-          /> */}
-          {/* <Dropdown
-            menu={{
-              items: [
-                {
-                  key: '1',
-                  label: 'View Details',
-                  icon: <EyeOutlined />,
-                  onClick: () => handleView(record),
-                },
-                {
-                  key: '2',
-                  label: 'Edit Contact',
-                  icon: <EditOutlined />,
-                  onClick: () => handleEdit(record),
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: '3',
-                  label: 'Download Offline QR',
-                  icon: <QrcodeOutlined />,
-                  onClick: () => handleDownloadOfflineQR(record),
-                },
-                {
-                  key: '4',
-                  label: 'Download Online QR',
-                  icon: <QrcodeOutlined />,
-                  onClick: () => handleDownloadOnlineQR(record),
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: '5',
-                  label: 'Delete',
-                  danger: true,
-                  icon: <DeleteOutlined />,
-                  onClick: () => handleDelete(record),
-                },
-              ],
-            }}
-            trigger={['click']}
-            placement="bottomRight"
+            onClick={() => handleMarkAsExchanged(record)}
+            disabled={record.hasExchanged}
+            className={record.hasExchanged ? 
+              "bg-gray-100 hover:bg-gray-200 text-gray-600" : 
+              "bg-green-500 hover:bg-green-600 text-white"}
           >
-            <Button
-              type="default"
-              size="middle"
-              icon={<MoreOutlined />}
-              className="border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-            />
-          </Dropdown> */}
+            {record.hasExchanged ? 'Exchanged' : 'Exchange'}
+          </Button>
         </div>
       ),
     },
@@ -266,8 +297,6 @@ export default function TagsTable() {
     );
   }
 
-  console.log('companyContacts-======', companyContacts);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -286,49 +315,27 @@ export default function TagsTable() {
             />
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto">
-            <Tooltip title="Refresh Data">
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={refreshData}
-                size="large"
-              />
-            </Tooltip>
-
-            <Tooltip title="Clear Filters">
-              <Button
-                icon={<FilterOutlined />}
-                onClick={clearAll}
-                size="large"
-                type={filteredInfo.company || sortedInfo.columnKey ? "primary" : "default"}
-              />
-            </Tooltip>
-
-            {/* <Link href="/tags/new">
-              <Button
-                type="primary"
-                size="large"
-                icon={<PlusOutlined />}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                Create New
-              </Button>
-            </Link> */}
-          </div>
+          <Tooltip title="Refresh Data">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={refreshData}
+              size="large"
+            />
+          </Tooltip>
         </div>
       </div>
 
       <Card className="shadow-md rounded-lg overflow-hidden">
-        {companyContacts.length === 0 ? (
+        {formConfigs.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <div className="text-center">
-                <p className="text-lg font-medium mb-2">No Contacts found</p>
-                <p className="text-gray-500 mb-4">Create your first contact to get started</p>
-                <Link href="/tags/new">
+                <p className="text-lg font-medium mb-2">No Contact Form Submissions found</p>
+                <p className="text-gray-500 mb-4">Contact forms are created automatically when users fill out forms on your tags</p>
+                <Link href="/tags">
                   <Button type="primary" icon={<PlusOutlined />}>
-                    Create New Contact
+                    View Your Tags
                   </Button>
                 </Link>
               </div>
@@ -339,59 +346,88 @@ export default function TagsTable() {
           <>
             <div className="p-4 bg-gray-50 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <div>
-                  <Text className="text-gray-600">
-                    Showing <Badge count={filteredTags.length} showZero style={{ backgroundColor: '#1890ff' }} /> of {companyContacts.length} Contacts
-                  </Text>
-                  {(Object.keys(filteredInfo).length > 0 || searchText) && (
-                    <Button
-                      type="link"
-                      size="small"
-                      onClick={clearAll}
-                      className="text-blue-500"
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Text className="text-gray-600 mr-2">Sort by:</Text>
-                  <Button
-                    size="small"
-                    icon={<SortAscendingOutlined />}
-                    type={sortedInfo.order === 'ascend' ? 'primary' : 'default'}
-                    onClick={() => setSortedInfo({ columnKey: 'contact', order: 'ascend' })}
-                  >
-                    Name
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<SortDescendingOutlined />}
-                    type={sortedInfo.order === 'descend' ? 'primary' : 'default'}
-                    onClick={() => setSortedInfo({ columnKey: 'contact', order: 'descend' })}
-                  >
-                    Name
-                  </Button>
-                </div>
+                <Text className="text-gray-600">
+                  Showing <Badge count={formConfigs.length} showZero style={{ backgroundColor: '#1890ff' }} /> Contacts
+                </Text>
               </div>
             </div>
-            <Table
-              columns={columns}
-              dataSource={filteredTags}
-              rowKey="id"
-              onChange={handleTableChange}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                pageSizeOptions: ['10', '20', '50'],
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                className: "px-4 py-3"
-              }}
-              className="w-full contact-table"
-              bordered={false}
-              rowClassName="hover:bg-gray-50"
-              showSorterTooltip={false}
-            />
+            
+            {/* Try/catch block to handle any rendering errors gracefully */}
+            {(() => {
+              try {
+                return (
+                  <Table
+                    columns={columns}
+                    dataSource={formConfigs}
+                    rowKey="id"
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      pageSizeOptions: ['10', '20', '50'],
+                      showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                      className: "px-4 py-3"
+                    }}
+                    className="w-full contact-table"
+                    bordered={false}
+                    expandable={{
+                      expandedRowRender: (record) => (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                          {record.tag?.tagInfo && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="font-semibold text-gray-700 mb-2">Tag Information</p>
+                                <div className="space-y-1">
+                                  <div>
+                                    <span className="text-gray-600">Name:</span> {record.tag.tagInfo.fname} {record.tag.tagInfo.lname}
+                                  </div>
+                                  {record.tag.tagInfo.position && (
+                                    <div>
+                                      <span className="text-gray-600">Position:</span> {record.tag.tagInfo.position}
+                                    </div>
+                                  )}
+                                  {record.tag.tagInfo.company && (
+                                    <div>
+                                      <span className="text-gray-600">Company:</span> {record.tag.tagInfo.company}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-700 mb-2">Form Details</p>
+                                <div className="space-y-1">
+                                  <div>
+                                    <span className="text-gray-600">Form Title:</span> {record.formTitle || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Message:</span> {record.messageField === 'value' ? 'No message provided' : record.messageField || 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    }}
+                  />
+                );
+              } catch (error) {
+                console.error("Error rendering table:", error);
+                // Fall back to a simple display of the form configs if table rendering fails
+                return (
+                  <div className="p-4">
+                    <div className="space-y-4">
+                      {formConfigs.map((config, index) => (
+                        <div key={config.id} className="border p-4 rounded-lg">
+                          <div className="font-medium">{config.nameField || 'Unknown'}</div>
+                          {config.emailField && <div>Email: {config.emailField}</div>}
+                          {config.phoneField && <div>Phone: {config.phoneField}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            })()}
           </>
         )}
       </Card>

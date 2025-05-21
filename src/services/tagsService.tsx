@@ -62,6 +62,62 @@ export interface Email {
     user: User;
     company: any | null;
   }
+
+  export interface FormConfig {
+    id: number;
+    tagId: string;
+    tagIdNumeric: number;
+    formTitle: string;
+    nameField: string | null;
+    emailField: string | null;
+    phoneField: string | null;
+    companyField: string | null;
+    messageField: string | null;
+    submitButtonText: string;
+    thankYouMessage: string;
+    hasExchanged: boolean;
+    updatedAt: string;
+    tag: {
+      id: number;
+      tuid: string;
+      tagInfo: {
+        dob: string | null;
+        role: string;
+        fname: string;
+        lname: string;
+        notes: string;
+        title: string;
+        avatar: string | null;
+        emails: { value: string; type?: string }[];
+        phones: { value: string; type?: string }[];
+        company: string;
+        position: string;
+        websites: any[];
+        addresses: any[];
+        eventType: string;
+      };
+      isActive: boolean;
+      hasContact: boolean;
+      createdAt: string;
+      updatedAt: string;
+      userId: number;
+      companyId: number | null;
+      user: {
+        id: number;
+        email: string;
+        firstName: string;
+        lastName: string;
+      };
+      company: any | null;
+    };
+  }
+
+  export interface FormConfigResponse {
+    formConfigs: FormConfig[];
+    total: number;
+    page: number;
+    limit: number;
+  }
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   
@@ -154,11 +210,35 @@ export interface Email {
       }
     },
 
-    async getCompanyContacts(companyId: number): Promise<Tag[]> {
+    async updateFormConfig(id: number, updateData: { hasExchanged?: boolean }): Promise<FormConfig | null> {
+      try {
+        const response = await fetch(`${API_BASE_URL}/form-config/${id}`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(updateData),
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.error('Authentication failed. Token may be invalid or expired.');
+            return null;
+          }
+          console.error(`API error: ${response.status}`);
+          return null;
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Error updating form config with ID ${id}:`, error);
+        return null;
+      }
+    },
+
+    async getCompanyContacts(): Promise<FormConfig[]> {
       try {
         logAuthStatus();
         
-        const response = await fetch(`${API_BASE_URL}/companies/${companyId}/contacts`, {
+        const response = await fetch(`${API_BASE_URL}/form-config/contacts`, {
           headers: getAuthHeaders(),
           cache: 'no-store',
         });
@@ -209,8 +289,6 @@ export interface Email {
           headers: getAuthHeaders(),
           cache: 'no-store',
         });
-
-        console.log('response single tag======================>>>', response) 
         
         if (!response.ok) {
           if (response.status === 401) {
