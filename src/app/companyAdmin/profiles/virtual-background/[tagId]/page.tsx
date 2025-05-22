@@ -106,186 +106,212 @@ const VirtualBackgroundPage = () => {
     return qrData;
   };
 
-const handleDownload = async () => {
-  try {
-    if (!tag || !selectedBgImage) {
-      alert('Cannot generate background: Missing profile data or background image.');
-      return;
-    }
-
-    const loadingElement = document.createElement('div');
-    loadingElement.id = 'bg-loading-indicator';
-    loadingElement.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;text-align:center;padding:10px;z-index:9999;';
-    loadingElement.textContent = 'Generating background...';
-    document.body.appendChild(loadingElement);
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      document.body.removeChild(loadingElement);
-      alert('Failed to create canvas context. Please try again or use a different browser.');
-      return;
-    }
-
-    const outputWidth = 1920; 
-    const outputHeight = 1080;
-    canvas.width = outputWidth;
-    canvas.height = outputHeight;
-    
-    const bgImg = new window.Image();
-    bgImg.crossOrigin = "anonymous";
-    
+  const handleDownload = async () => {
     try {
-      await new Promise<void>((resolve, reject) => {
-        bgImg.onload = () => resolve();
-        bgImg.onerror = (e) => {
-          console.error("Background image loading error:", e);
-          reject(new Error("Failed to load background image"));
-        };
-        bgImg.src = selectedBgImage;
-      });
+      if (!tag || !selectedBgImage) {
+        alert('Cannot generate background: Missing profile data or background image.');
+        return;
+      }
+  
+      const loadingElement = document.createElement('div');
+      loadingElement.id = 'bg-loading-indicator';
+      loadingElement.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;text-align:center;padding:10px;z-index:9999;';
+      loadingElement.textContent = 'Generating background...';
+      document.body.appendChild(loadingElement);
       
-      ctx.drawImage(bgImg, 0, 0, outputWidth, outputHeight);
-    } catch (error) {
-      document.body.removeChild(loadingElement);
-      alert('Error loading background image. Please try a different image.');
-      return;
-    }
-    
-    if (showQrCode) {
-      const qrCodeSize = condensedView ? outputWidth * 0.075 : outputWidth * 0.1;
-      const qrPadding = qrCodeSize * 0.05;
-      const qrBoxSize = qrCodeSize + 2 * qrPadding;
-      const qrMargin = condensedView ? outputWidth * 0.015 : outputWidth * 0.03;
-      const qrX = outputWidth - qrBoxSize - qrMargin;
-      const qrY = qrMargin;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+  
+      if (!ctx) {
+        document.body.removeChild(loadingElement);
+        alert('Failed to create canvas context. Please try again or use a different browser.');
+        return;
+      }
+  
+      const outputWidth = 1920; 
+      const outputHeight = 1080;
+      canvas.width = outputWidth;
+      canvas.height = outputHeight;
       
-      ctx.fillStyle = 'white';
-      ctx.fillRect(qrX, qrY, qrBoxSize, qrBoxSize);
-      
-      ctx.strokeStyle = qrColor;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(qrX, qrY, qrBoxSize, qrBoxSize);
-      
-      const qrCodeUrl = generateQrCodeData(tag);
-      const qrApiColor = qrColor.replace('#', '');
-      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.floor(qrCodeSize)}x${Math.floor(qrCodeSize)}&data=${encodeURIComponent(qrCodeUrl)}&color=${qrApiColor}&bgcolor=FFFFFF&qzone=1&format=png`;
+      const bgImg = new window.Image();
+      bgImg.crossOrigin = "anonymous";
       
       try {
-        const qrImg = new window.Image();
-        qrImg.crossOrigin = "anonymous";
-        
         await new Promise<void>((resolve, reject) => {
-          qrImg.onload = () => resolve();
-          qrImg.onerror = (e) => {
-            console.error("QR code image loading error:", e);
-            reject(new Error("Failed to load QR code"));
+          bgImg.onload = () => resolve();
+          bgImg.onerror = (e) => {
+            console.error("Background image loading error:", e);
+            reject(new Error("Failed to load background image"));
           };
-          qrImg.src = qrImgUrl;
+          bgImg.src = selectedBgImage;
         });
         
-        ctx.drawImage(qrImg, qrX + qrPadding, qrY + qrPadding, qrCodeSize, qrCodeSize);
+        ctx.drawImage(bgImg, 0, 0, outputWidth, outputHeight);
       } catch (error) {
-        console.error("Error loading QR code:", error);
-      }
-    }
-    
-    // Draw Text Information with TypeScript fixes
-    if (showName || showJobTitle || showCompany || showEmail || showPhone) {
-      ctx.fillStyle = 'white';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      ctx.shadowBlur = 3;
-      
-      let currentTextY = outputHeight - (condensedView ? outputHeight * 0.02 : outputHeight * 0.04);
-      const textX = condensedView ? outputWidth * 0.02 : outputWidth * 0.04;
-      const lineHeight = condensedView ? outputHeight * 0.035 : outputHeight * 0.045;
-      
-      // Prepare text items to draw with proper typing
-      const textsToDraw: TextItem[] = [];
-      
-      if (showCompany && tag.tagInfo?.company) {
-        textsToDraw.push(tag.tagInfo.company);
-      }
-      if (showJobTitle && tag.tagInfo?.position) {
-        textsToDraw.push(tag.tagInfo.position);
-      }
-      if (showEmail && tag.tagInfo?.email) {
-        textsToDraw.push(String(tag.tagInfo.email));
+        document.body.removeChild(loadingElement);
+        alert('Error loading background image. Please try a different image.');
+        return;
       }
       
-      if (showPhone && tag.tagInfo?.phone) {
-        textsToDraw.push(String(tag.tagInfo.phone));
-      }
-      if (showName) {
-        const nameText = `${tag.tagInfo?.fname || ''} ${tag.tagInfo?.lname || ''}`.trim();
-        textsToDraw.push({ text: nameText, isName: true });
-      }
-      
-      for (let i = 0; i < textsToDraw.length; i++) {
-        const item = textsToDraw[i];
-        let text: string;
-        let isName = false;
+      // Draw QR code
+      if (showQrCode) {
+        const qrCodeSize = condensedView ? outputWidth * 0.075 : outputWidth * 0.1;
+        const qrPadding = qrCodeSize * 0.05;
+        const qrBoxSize = qrCodeSize + 2 * qrPadding;
+        const qrMargin = condensedView ? outputWidth * 0.015 : outputWidth * 0.03;
+        const qrX = outputWidth - qrBoxSize - qrMargin;
+        const qrY = qrMargin;
         
-        if (typeof item === 'string') {
-          text = item;
-        } else {
-          text = item.text;
-          isName = item.isName;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(qrX, qrY, qrBoxSize, qrBoxSize);
+        
+        ctx.strokeStyle = qrColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(qrX, qrY, qrBoxSize, qrBoxSize);
+        
+        const qrCodeUrl = generateQrCodeData(tag);
+        const qrApiColor = qrColor.replace('#', '');
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${Math.floor(qrCodeSize)}x${Math.floor(qrCodeSize)}&data=${encodeURIComponent(qrCodeUrl)}&color=${qrApiColor}&bgcolor=FFFFFF&qzone=1&format=png`;
+        
+        try {
+          const qrImg = new window.Image();
+          qrImg.crossOrigin = "anonymous";
+          
+          await new Promise<void>((resolve, reject) => {
+            qrImg.onload = () => resolve();
+            qrImg.onerror = (e) => {
+              console.error("QR code image loading error:", e);
+              reject(new Error("Failed to load QR code"));
+            };
+            qrImg.src = qrImgUrl;
+          });
+          
+          ctx.drawImage(qrImg, qrX + qrPadding, qrY + qrPadding, qrCodeSize, qrCodeSize);
+      
+          const hasEmails = showEmail && tag.tagInfo?.emails && tag.tagInfo.emails.length > 0;
+          const hasPhones = showPhone && tag.tagInfo?.phones && tag.tagInfo.phones.length > 0;
+          
+          if (hasEmails || hasPhones) {
+            ctx.fillStyle = 'white';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            ctx.shadowBlur = 3;
+            
+            const textSize = condensedView ? outputHeight * 0.015 : outputHeight * 0.02;
+            ctx.font = `${textSize}px Arial`;
+            ctx.textAlign = 'right';
+            
+            let textY = qrY + qrBoxSize + textSize * 1.5;
+            
+            if (hasEmails) {
+              for (let i = 0; i < tag.tagInfo.emails.length; i++) {
+                ctx.fillText(String(tag.tagInfo.emails[i].value), qrX + qrBoxSize, textY);
+                textY += textSize * 1.3;
+              }
+            }
+            
+            if (hasPhones) {
+              for (let i = 0; i < tag.tagInfo.phones.length; i++) {
+                ctx.fillText(String(tag.tagInfo.phones[i].value), qrX + qrBoxSize, textY);
+                textY += textSize * 1.3;
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading QR code:", error);
+        }
+      }
+      
+      // Draw main information at the bottom
+      if (showName || showJobTitle || showCompany) {
+        // Apply text shadow for better readability
+        ctx.fillStyle = 'white';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.shadowBlur = 3;
+        ctx.textAlign = 'left';
+        
+        // Adjust position to avoid cutting off text
+        const baseFontSize = condensedView ? outputHeight * 0.03 : outputHeight * 0.04;
+        const nameFontSize = condensedView ? outputHeight * 0.035 : outputHeight * 0.045;
+        const lineHeight = condensedView ? outputHeight * 0.035 : outputHeight * 0.045;
+        const textX = outputWidth * 0.04; // Left margin
+        
+        // Calculate space needed for all text lines
+        let totalLines = 0;
+        if (showName) totalLines++;
+        if (showJobTitle && tag.tagInfo?.position) totalLines++;
+        if (showCompany && tag.tagInfo?.company) totalLines++;
+        
+        // Start position from bottom (with margin)
+        let currentTextY = outputHeight - (outputHeight * 0.05);
+        
+        // Adjust for total height of text block
+        currentTextY -= (totalLines - 1) * lineHeight;
+        
+        // Draw name (bold and larger)
+        if (showName) {
+          const nameText = `${tag.tagInfo?.fname || ''} ${tag.tagInfo?.lname || ''}`.trim();
+          ctx.font = `bold ${nameFontSize}px Arial`;
+          ctx.fillText(nameText, textX, currentTextY);
+          currentTextY += lineHeight;
         }
         
-        if (isName) {
-          ctx.font = condensedView ? `bold ${outputHeight * 0.035}px Arial` : `bold ${outputHeight * 0.045}px Arial`;
-        } else {
-          ctx.font = condensedView ? `${outputHeight * 0.03}px Arial` : `${outputHeight * 0.04}px Arial`;
+        // Draw job title
+        if (showJobTitle && tag.tagInfo?.position) {
+          ctx.font = `${baseFontSize}px Arial`;
+          ctx.fillText(tag.tagInfo.position, textX, currentTextY);
+          currentTextY += lineHeight;
         }
         
-        ctx.fillText(text, textX, currentTextY);
-        currentTextY -= lineHeight;
-      }
-    }
-    
-    try {
-      const dataUrl = canvas.toDataURL('image/png');
-      
-      const downloadLink = document.createElement('a');
-      downloadLink.href = dataUrl;
-      downloadLink.download = `virtual-background-${tag.tagInfo?.fname || 'user'}-${tag.tagInfo?.lname || ''}.png`.trim();
-      
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      document.body.removeChild(loadingElement);
-      
-      const successElement = document.createElement('div');
-      successElement.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(82,196,26,0.9);color:white;text-align:center;padding:10px;z-index:9999;';
-      successElement.textContent = 'Background downloaded successfully!';
-      document.body.appendChild(successElement);
-      
-      setTimeout(() => {
-        if (document.body.contains(successElement)) {
-          document.body.removeChild(successElement);
+        // Draw company
+        if (showCompany && tag.tagInfo?.company) {
+          ctx.font = `${baseFontSize}px Arial`;
+          ctx.fillText(tag.tagInfo.company, textX, currentTextY);
         }
-      }, 3000);
-    } catch (downloadError) {
-      console.error("Error in download process:", downloadError);
-      document.body.removeChild(loadingElement);
-      alert("Failed to create or download the image. Please try again.");
+      }
+      
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = dataUrl;
+        downloadLink.download = `virtual-background-${tag.tagInfo?.fname || 'user'}-${tag.tagInfo?.lname || ''}.png`.trim();
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        document.body.removeChild(loadingElement);
+        
+        const successElement = document.createElement('div');
+        successElement.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(82,196,26,0.9);color:white;text-align:center;padding:10px;z-index:9999;';
+        successElement.textContent = 'Background downloaded successfully!';
+        document.body.appendChild(successElement);
+        
+        setTimeout(() => {
+          if (document.body.contains(successElement)) {
+            document.body.removeChild(successElement);
+          }
+        }, 3000);
+      } catch (downloadError) {
+        console.error("Error in download process:", downloadError);
+        document.body.removeChild(loadingElement);
+        alert("Failed to create or download the image. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error generating background:", error);
+      
+      const loadingElement = document.getElementById('bg-loading-indicator');
+      if (loadingElement && document.body.contains(loadingElement)) {
+        document.body.removeChild(loadingElement);
+      }
+      
+      alert(`Failed to generate background: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
     }
-  } catch (error) {
-    console.error("Error generating background:", error);
-    
-    const loadingElement = document.getElementById('bg-loading-indicator');
-    if (loadingElement && document.body.contains(loadingElement)) {
-      document.body.removeChild(loadingElement);
-    }
-    
-    alert(`Failed to generate background: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
-  }
-};
+  };
 
 
   if (typeof window !== 'undefined' && (isLoading || isLoadingTagFromApi)) {
@@ -316,6 +342,8 @@ const handleDownload = async () => {
     );
   }
 
+  console.log("================", tag);
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Back button and header */}
@@ -328,7 +356,7 @@ const handleDownload = async () => {
         >
           Back to Profiles
         </Button>
-        <Title level={2} className="mb-1">Virtual Background Creator</Title>
+        <Title level={2} className="mb-1">Virtual Background</Title>
         <Text type="secondary" className="text-lg">
           Create a personalized virtual background for {tag?.tagInfo?.fname || ''} {tag?.tagInfo?.lname || ''}
         </Text>
@@ -566,13 +594,27 @@ const handleDownload = async () => {
                     )}
                     
                     {showQrCode && tag && (
-                      <div className={`absolute top-3 right-3 bg-white p-1 rounded-md border-2 ${condensedView ? 'w-16 h-16' : 'w-24 h-24'}`} style={{ borderColor: qrColor }}>
-                        <Image
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generateQrCodeData(tag))}&color=${qrColor.replace('#','')}&bgcolor=FFFFFF`}
-                          alt="QR Code"
-                          className="w-full h-full"
-                          preview={false}
-                        />
+                      <div className="absolute top-4 right-4 flex flex-col justify-center items-center">
+                        <div className={`bg-white p-1 rounded-md border-2 ${condensedView ? 'w-16 h-16' : 'w-24 h-24'}`} style={{ borderColor: qrColor }}>
+                          <Image
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generateQrCodeData(tag))}&color=${qrColor.replace('#','')}&bgcolor=FFFFFF`}
+                            alt="QR Code"
+                            className="w-full h-full"
+                            preview={false}
+                          />
+                        </div>
+                        <div className="text-left mt-1 text-center flex justify-center items-center flex-col">
+                          {showEmail && tag.tagInfo?.emails && tag.tagInfo.emails.length > 0 && (
+                            <div className={`text-white text-xs text-shadow ${condensedView ? 'text-xs' : 'text-sm'}`}>
+                              {tag.tagInfo.emails[0].value}
+                            </div>
+                          )}
+                          {showPhone && tag.tagInfo?.phones && tag.tagInfo.phones.length > 0 && (
+                            <div className={`text-white text-xs text-shadow ${condensedView ? 'text-xs' : 'text-sm'}`}>
+                              {tag.tagInfo.phones[0].value}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

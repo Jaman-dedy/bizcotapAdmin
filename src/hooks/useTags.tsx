@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import tagsService, { Tag } from '@/services/tagsService';
+import tagsService, { Tag, FormConfig, FormConfigResponse } from '@/services/tagsService';
 
 export const useTags = (id?: string) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [myTags, setMyTags] = useState<Tag[]>([]);
-  const [companyContacts, setCompanyContacts] = useState<Tag[]>([]);
+  const [companyContacts, setCompanyContacts] = useState<FormConfig[]>([]);
   const [singleTag, setSingleTag] = useState<Tag | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +41,11 @@ export const useTags = (id?: string) => {
     }
   }, []);
 
-  const fetchCompanyContacts = useCallback(async (id: number) => {
+  const fetchCompanyContacts = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await tagsService.getCompanyContacts(id);
+      const data = await tagsService.getCompanyContacts();
       setCompanyContacts(data);
       return { success: true };
     } catch (err) {
@@ -73,6 +73,30 @@ export const useTags = (id?: string) => {
     }
   }, []);
 
+
+  const updateFormConfig = useCallback(async (id: number, updateData: { hasExchanged?: boolean }) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const updated = await tagsService.updateFormConfig(id, updateData);
+      
+      if (updated) {
+        setCompanyContacts(prev => 
+          prev.map(config => config.id === id ? { ...config, ...updateData } : config)
+        );
+        return { success: true, data: updated };
+      }
+      
+      return { success: false, error: 'Failed to update form config' };
+    } catch (err) {
+      console.error('Error updating form config:', err);
+      setError('Failed to update form config. Please try again later.');
+      return { success: false, error: 'Failed to update form config. Please try again later.' };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchTags();
   }, [fetchTags]);
@@ -88,7 +112,7 @@ export const useTags = (id?: string) => {
   }, [fetchMyTags]);
 
   useEffect(() => {
-    fetchCompanyContacts(1);
+    fetchCompanyContacts();
   }, [fetchCompanyContacts]);
 
   const deleteTag = useCallback(async (id: number) => {
@@ -151,6 +175,7 @@ export const useTags = (id?: string) => {
     isLoading,
     error,
     fetchTags,
+    updateFormConfig,
     fetchSingleTagByTuid,
     fetchMyTags,
     deleteTag,

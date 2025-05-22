@@ -31,7 +31,7 @@ const { confirm } = Modal;
 
 export default function TagsTable() {
   const [searchText, setSearchText] = useState<string>('');
-  const [sortedInfo, setSortedInfo] = useState<any>({});
+  const [sortedInfo, setSortedInfo] = useState<any>({ columnKey: 'createdAt', order: 'descend' }); // Set default sorting
   const [filteredInfo, setFilteredInfo] = useState<any>({});
   const { tags, isLoading, error, fetchTags, deleteTag } = useTags();
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function TagsTable() {
   // Reset filters and sorters
   const clearAll = () => {
     setFilteredInfo({});
-    setSortedInfo({});
+    setSortedInfo({ columnKey: 'createdAt', order: 'descend' }); // Reset to default sorting
     setSearchText('');
   };
 
@@ -197,6 +197,24 @@ export default function TagsTable() {
       filters: companyFilters,
       filteredValue: filteredInfo.company || null,
       onFilter: (value, record) => record.tagInfo.company === value,
+    },
+    {
+      title: 'Created',
+      key: 'createdAt',
+      className: 'text-left',
+      width: '15%',
+      render: (_, record) => (
+        <div className="text-gray-700">
+          {record.createdAt ? new Date(record.createdAt).toLocaleDateString() : 'N/A'}
+        </div>
+      ),
+      sorter: (a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // Default sort newest first
+      },
+      sortOrder: sortedInfo.columnKey === 'createdAt' && sortedInfo.order,
+      defaultSortOrder: 'descend',
     },
     {
       title: 'Actions',
@@ -405,17 +423,17 @@ export default function TagsTable() {
                     size="small"
                     icon={<SortAscendingOutlined />}
                     type={sortedInfo.order === 'ascend' ? 'primary' : 'default'}
-                    onClick={() => setSortedInfo({ columnKey: 'contact', order: 'ascend' })}
+                    onClick={() => setSortedInfo({ columnKey: 'createdAt', order: 'ascend' })}
                   >
-                    Name
+                    Date
                   </Button>
                   <Button
                     size="small"
                     icon={<SortDescendingOutlined />}
                     type={sortedInfo.order === 'descend' ? 'primary' : 'default'}
-                    onClick={() => setSortedInfo({ columnKey: 'contact', order: 'descend' })}
+                    onClick={() => setSortedInfo({ columnKey: 'createdAt', order: 'descend' })}
                   >
-                    Name
+                    Date
                   </Button>
                 </div>
               </div>

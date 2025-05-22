@@ -196,7 +196,8 @@ export function useCreateFormConfig() {
   const queryClient = useQueryClient();
 
   return useMutation<any, AxiosError, { 
-    tagId: string, 
+    tuid: string,
+    tagIdNumeric: number,
     formConfig: {
       formTitle?: string,
       nameField?: string | null,
@@ -208,14 +209,18 @@ export function useCreateFormConfig() {
       thankYouMessage?: string
     }
   }>({
-    mutationFn: async ({ tagId, formConfig }) => {
-      console.log('Creating form config with tagId:', tagId);
+    mutationFn: async ({ tuid, tagIdNumeric, formConfig }) => {
+      console.log('Creating form config with tuid:', tuid);
+      console.log('tagIdNumeric:', tagIdNumeric);
       console.log('Form config data:', formConfig);
       
-      const response = await apiClient.post('/form-config', {
-        tagId,
+      const payload = {
+        tuid,
+        tagIdNumeric,
         ...formConfig
-      });
+      };
+      
+      const response = await apiClient.post('/form-config', payload);
       return parseApiResponse(response);
     },
     onSuccess: () => {

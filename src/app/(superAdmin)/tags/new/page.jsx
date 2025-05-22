@@ -118,26 +118,27 @@ const TagWizard = () => {
   const onFinish = async () => {
     try {
       setLoading(true);
-
+  
       await form.validateFields();
-
-    const isLeadCaptureEnabled = form.getFieldValue('enableLeadCapture') || false;
-
-    const apiData = transformTagData(formValues);
-    
-    apiData.hasContact = isLeadCaptureEnabled;
-
-    const formConfigData = {
-      formTitle: form.getFieldValue('leadCaptureTitle') || 'Contact Me',
-      nameField: form.getFieldValue('fieldName') ? 'value' : null,
-      emailField: form.getFieldValue('fieldEmail') ? 'value' : null,
-      phoneField: form.getFieldValue('fieldPhone') ? 'value' : null,
-      companyField: form.getFieldValue('fieldCompany') ? 'value' : null,
-      messageField: form.getFieldValue('fieldMessage') ? 'value' : null,
-      submitButtonText: form.getFieldValue('leadCaptureButton') || 'Submit',
-      thankYouMessage: form.getFieldValue('thankYouMessage') || 'Thank you for your message. I will get back to you soon!'
-    };
-
+  
+      const isLeadCaptureEnabled = form.getFieldValue('enableLeadCapture') || false;
+  
+      const apiData = transformTagData(formValues);
+      
+      apiData.hasContact = isLeadCaptureEnabled;
+  
+      // Prepare the form config data
+      const formConfigData = {
+        formTitle: form.getFieldValue('leadCaptureTitle') || 'Contact Me',
+        nameField: form.getFieldValue('fieldName') ? 'value' : null,
+        emailField: form.getFieldValue('fieldEmail') ? 'value' : null,
+        phoneField: form.getFieldValue('fieldPhone') ? 'value' : null,
+        companyField: form.getFieldValue('fieldCompany') ? 'value' : null,
+        messageField: form.getFieldValue('fieldMessage') ? 'value' : null,
+        submitButtonText: form.getFieldValue('leadCaptureButton') || 'Submit',
+        thankYouMessage: form.getFieldValue('thankYouMessage') || 'Thank you for your message. I will get back to you soon!'
+      };
+  
       createTag(
         {
           tagData: apiData,
@@ -146,28 +147,40 @@ const TagWizard = () => {
         {
           onSuccess: (data) => {
             if (isLeadCaptureEnabled) {
-              createFormConfig({
-                tagId: data?.tuid,
-                formConfig: formConfigData
-              }, {
-                onSuccess: () => {
-                  notification.success({
-                    message: 'Digital Card Created',
-                    description: 'Your digital card and lead capture form have been created successfully!',
-                  });
-                  
-                  router.push('/tags');
-                },
-                onError: (error) => {
-                  console.error('Error creating form config:', error);
-                  notification.warning({
-                    message: 'Form Config Creation Issue',
-                    description: 'Card created but there was an issue with the lead capture form configuration. You can set it up later.',
-                  });
-                  
-                  router.push('/tags');
-                }
-              });
+              // Check that data is not null and has the required properties
+              if (data && data.tuid && data.id) {
+                createFormConfig({
+                  tuid: data.tuid,
+                  tagIdNumeric: data.id, // Use the id field as tagIdNumeric
+                  formConfig: formConfigData
+                }, {
+                  onSuccess: () => {
+                    notification.success({
+                      message: 'Digital Card Created',
+                      description: 'Your digital card and lead capture form have been created successfully!',
+                    });
+                    
+                    router.push('/tags');
+                  },
+                  onError: (error) => {
+                    console.error('Error creating form config:', error);
+                    notification.warning({
+                      message: 'Form Config Creation Issue',
+                      description: 'Card created but there was an issue with the lead capture form configuration. You can set it up later.',
+                    });
+                    
+                    router.push('/tags');
+                  }
+                });
+              } else {
+                console.error('Missing required data for form config:', data);
+                notification.warning({
+                  message: 'Form Config Creation Issue',
+                  description: 'Card created but there was an issue with the lead capture form configuration. You can set it up later.',
+                });
+                
+                router.push('/tags');
+              }
             } else {
               notification.success({
                 message: 'Digital Card Created',
@@ -180,7 +193,7 @@ const TagWizard = () => {
           },
           onError: (error) => {
             console.error('Error creating tag:', error);
-
+  
             notification.error({
               message: 'Creation Failed',
               description: error?.response?.data?.message || 'Failed to create digital card. Please try again.',
@@ -194,7 +207,7 @@ const TagWizard = () => {
     } catch (error) {
       console.error('Form validation error:', error);
       setLoading(false);
-
+  
       notification.error({
         message: 'Form Validation Failed',
         description: 'Please check all required fields and try again.',
